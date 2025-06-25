@@ -1,5 +1,6 @@
 package com.example.notesapp.ui
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
@@ -21,16 +22,25 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-
         dbHelper = NotesDatabaseHelper(this)
         adapter = NotesAdapter()
 
+        // Setup RecyclerView
         binding.recyclerRecentNotes.layoutManager = GridLayoutManager(this, 2)
         binding.recyclerRecentNotes.adapter = adapter
 
+        binding.fabAddNote.setOnClickListener {
+            val intent = Intent(this, AddEditNoteActivity::class.java)
+            startActivity(intent)
+        }
+
         insertDummyNotesIfEmpty()
 
-        // Load data
+        loadNotes()
+    }
+
+    override fun onResume() {
+        super.onResume()
         loadNotes()
     }
 
