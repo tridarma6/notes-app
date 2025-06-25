@@ -18,4 +18,6 @@
     <color name="warning">#F39C12</color> <!-- Amber for warning notes -->
     <color name="success">#2ECC71</color> <!-- Green for success -->
     <color name="danger">#E74C3C</color> <!-- Red for deletion or alerts -->
+
+    <color name="nav_item_color">#FF6200EE</color>
 </resources>
