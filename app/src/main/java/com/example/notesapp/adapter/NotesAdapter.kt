@@ -1,30 +1,39 @@
 package com.example.notesapp.adapter
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.example.notesapp.R
 import com.example.notesapp.data.model.Note
+import com.example.notesapp.databinding.ItemNoteBinding
 
-class NotesAdapter(private val notes: List<Note>) : RecyclerView.Adapter<NotesAdapter.NoteViewHolder>() {
+class NotesAdapter : RecyclerView.Adapter<NotesAdapter.NoteViewHolder>() {
 
-    inner class NoteViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val titleText: TextView = itemView.findViewById(R.id.noteTitle)
-        val contentText: TextView = itemView.findViewById(R.id.noteContent)
+    private val notes = mutableListOf<Note>()
+
+    fun submitList(newNotes: List<Note>) {
+        notes.clear()
+        notes.addAll(newNotes)
+        notifyDataSetChanged()
+    }
+
+    inner class NoteViewHolder(private val binding: ItemNoteBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+
+        fun bind(note: Note) {
+            binding.noteTitle.text = note.title
+            binding.noteContent.text = note.content
+            binding.noteFavorite.visibility = if (note.isFavorite) android.view.View.VISIBLE else android.view.View.GONE
+            // Tambahkan binding untuk kategori atau status lainnya jika ingin
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NoteViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_note, parent, false)
-        return NoteViewHolder(view)
+        val binding = ItemNoteBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return NoteViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: NoteViewHolder, position: Int) {
-        val note = notes[position]
-        holder.titleText.text = note.title
-        holder.contentText.text = note.content
+        holder.bind(notes[position])
     }
 
     override fun getItemCount(): Int = notes.size
