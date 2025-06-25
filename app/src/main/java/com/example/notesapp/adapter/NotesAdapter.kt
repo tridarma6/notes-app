@@ -1,20 +1,14 @@
-package com.example.notesapp.adapter
-
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.notesapp.data.model.Note
 import com.example.notesapp.databinding.ItemNoteBinding
 
-class NotesAdapter : RecyclerView.Adapter<NotesAdapter.NoteViewHolder>() {
-
-    private val notes = mutableListOf<Note>()
-
-    fun submitList(newNotes: List<Note>) {
-        notes.clear()
-        notes.addAll(newNotes)
-        notifyDataSetChanged()
-    }
+class NotesAdapter(
+    private val onItemClick: (Note) -> Unit
+) : ListAdapter<Note, NotesAdapter.NoteViewHolder>(DIFF_CALLBACK) {
 
     inner class NoteViewHolder(private val binding: ItemNoteBinding) :
         RecyclerView.ViewHolder(binding.root) {
@@ -22,8 +16,10 @@ class NotesAdapter : RecyclerView.Adapter<NotesAdapter.NoteViewHolder>() {
         fun bind(note: Note) {
             binding.noteTitle.text = note.title
             binding.noteContent.text = note.content
-            binding.noteFavorite.visibility = if (note.isFavorite) android.view.View.VISIBLE else android.view.View.GONE
-            // Tambahkan binding untuk kategori atau status lainnya jika ingin
+
+            binding.root.setOnClickListener {
+                onItemClick(note)
+            }
         }
     }
 
@@ -33,8 +29,18 @@ class NotesAdapter : RecyclerView.Adapter<NotesAdapter.NoteViewHolder>() {
     }
 
     override fun onBindViewHolder(holder: NoteViewHolder, position: Int) {
-        holder.bind(notes[position])
+        holder.bind(getItem(position))
     }
 
-    override fun getItemCount(): Int = notes.size
+    companion object {
+        val DIFF_CALLBACK = object : DiffUtil.ItemCallback<Note>() {
+            override fun areItemsTheSame(oldItem: Note, newItem: Note): Boolean {
+                return oldItem.id == newItem.id
+            }
+
+            override fun areContentsTheSame(oldItem: Note, newItem: Note): Boolean {
+                return oldItem == newItem
+            }
+        }
+    }
 }

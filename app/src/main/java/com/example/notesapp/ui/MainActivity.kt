@@ -1,10 +1,10 @@
 package com.example.notesapp.ui
 
+import NotesAdapter
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
-import com.example.notesapp.adapter.NotesAdapter
 import com.example.notesapp.data.dao.NoteDao
 import com.example.notesapp.data.db.NotesDatabaseHelper
 import com.example.notesapp.data.model.Note
@@ -23,7 +23,13 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         dbHelper = NotesDatabaseHelper(this)
-        adapter = NotesAdapter()
+        adapter = NotesAdapter { note ->
+            val intent = Intent(this, AddEditNoteActivity::class.java).apply {
+                putExtra("EXTRA_NOTE_ID", note.id)
+            }
+            startActivity(intent)
+        }
+
 
         // Setup RecyclerView
         binding.recyclerRecentNotes.layoutManager = GridLayoutManager(this, 2)

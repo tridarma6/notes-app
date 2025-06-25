@@ -74,7 +74,7 @@ object NoteDao {
         return db.delete(TABLE_NAME, "$COLUMN_ID=?", arrayOf(noteId)) > 0
     }
 
-    fun update(db: SQLiteDatabase, note: Note): Boolean {
+    fun update(db: SQLiteDatabase, note: Note) {
         val values = ContentValues().apply {
             put(COLUMN_TITLE, note.title)
             put(COLUMN_CONTENT, note.content)
@@ -82,8 +82,30 @@ object NoteDao {
             put(COLUMN_IS_FAVORITE, if (note.isFavorite) 1 else 0)
             put(COLUMN_IS_HIDDEN, if (note.isHidden) 1 else 0)
             put(COLUMN_IS_TRASHED, if (note.isTrashed) 1 else 0)
-            put(COLUMN_UPDATED_AT, note.updatedAt)
         }
-        return db.update(TABLE_NAME, values, "$COLUMN_ID=?", arrayOf(note.id)) > 0
+        db.update(TABLE_NAME, values, "$COLUMN_ID = ?", arrayOf(note.id))
     }
+
+    fun getById(db: SQLiteDatabase, id: String): Note? {
+        val cursor = db.query(
+            TABLE_NAME, null,
+            "$COLUMN_ID = ?", arrayOf(id),
+            null, null, null
+        )
+        cursor.use {
+            if (it.moveToFirst()) {
+                return Note(
+                    id = it.getString(it.getColumnIndexOrThrow(COLUMN_ID)),
+                    title = it.getString(it.getColumnIndexOrThrow(COLUMN_TITLE)),
+                    content = it.getString(it.getColumnIndexOrThrow(COLUMN_CONTENT)),
+                    categoryId = it.getInt(it.getColumnIndexOrThrow(COLUMN_CATEGORY_ID)),
+                    isFavorite = it.getInt(it.getColumnIndexOrThrow(COLUMN_IS_FAVORITE)) == 1,
+                    isHidden = it.getInt(it.getColumnIndexOrThrow(COLUMN_IS_HIDDEN)) == 1,
+                    isTrashed = it.getInt(it.getColumnIndexOrThrow(COLUMN_IS_TRASHED)) == 1
+                )
+            }
+        }
+        return null
+    }
+
 }
