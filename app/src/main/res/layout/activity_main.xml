@@ -10,10 +10,10 @@
         android:id="@+id/appTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Noteit"
+        android:text="@string/app_name"
         android:textStyle="bold"
         android:textSize="28sp"
-        android:textColor="#111"
+        android:textColor="#1C2121"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginStart="16dp"
@@ -40,22 +40,23 @@
                 android:id="@+id/searchBar"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:hint="Search"
+                android:hint="@string/search"
                 android:background="@android:color/transparent"
                 android:drawableStart="@android:drawable/ic_menu_search"
                 android:paddingStart="8dp"
+                android:paddingEnd="8dp"
                 android:textColor="#000"
                 android:inputType="text" />
         </RelativeLayout>
     </androidx.cardview.widget.CardView>
 
     <!-- Quick Buttons -->
-    <GridLayout
+    <androidx.gridlayout.widget.GridLayout
         android:id="@+id/quickButtons"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:columnCount="2"
-        android:rowCount="3"
+        app:columnCount="2"
+        app:rowCount="3"
         android:padding="8dp"
         android:layout_marginHorizontal="16dp"
         android:layout_marginTop="8dp"
@@ -63,49 +64,72 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- All Notes Button -->
         <Button
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:text="All Notes"
-            android:drawableStart="@drawable/icon_notes"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_columnWeight="1"
+            android:text="@string/all_notes"
+            android:drawableLeft="@drawable/icon_note_small"
             android:layout_margin="8dp"
-            android:drawablePadding="8dp"/>
+            android:drawablePadding="8dp"
+            android:background="@drawable/button_background"
+            android:textColor="#1C2121"/>
 
         <!-- Favourites -->
         <Button
-            android:text="Favourites"
-            android:drawableStart="@drawable/ic_favorites"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_columnWeight="1"
+            android:text="@string/favourite"
+            android:drawableLeft="@drawable/icon_favourite_small"
             android:layout_margin="8dp"
-            android:drawablePadding="8dp" />
+            android:drawablePadding="8dp"
+            android:background="@drawable/button_background"
+            android:textColor="#1C2121"/>
 
         <!-- Hidden -->
         <Button
-            android:text="Hidden"
-            android:drawableStart="@drawable/ic_hidden"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_columnWeight="1"
+            android:text="@string/hidden"
+            android:drawableLeft="@drawable/icon_hidden_small"
             android:layout_margin="8dp"
-            android:drawablePadding="8dp" />
+            android:drawablePadding="8dp"
+            android:background="@drawable/button_background"
+            android:textColor="#1C2121"/>
 
         <!-- Trash -->
         <Button
-            android:text="Trash"
-            android:drawableStart="@drawable/ic_delete"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_columnWeight="1"
+            android:text="@string/trash"
+            android:drawableLeft="@drawable/icon_trash_small"
             android:layout_margin="8dp"
-            android:drawablePadding="8dp" />
+            android:drawablePadding="8dp"
+            android:background="@drawable/button_background"
+            android:textColor="#1C2121"/>
 
         <!-- Category -->
         <Button
-            android:text="Category"
-            android:drawableStart="@drawable/ic_category"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_columnWeight="1"
+            android:text="@string/category"
+            android:drawableLeft="@drawable/icon_category_small"
             android:layout_margin="8dp"
-            android:drawablePadding="8dp" />
-    </GridLayout>
+            android:drawablePadding="8dp"
+            android:background="@drawable/button_background"
+            android:textColor="#1C2121"/>
+    </androidx.gridlayout.widget.GridLayout>
 
     <!-- Recent Notes Title -->
     <TextView
         android:id="@+id/recentNotesTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Recent Notes"
+        android:text="@string/recent_notes"
         android:textStyle="bold"
         android:textSize="18sp"
         android:layout_marginTop="16dp"

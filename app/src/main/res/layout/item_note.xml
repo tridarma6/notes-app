@@ -18,7 +18,7 @@
             android:id="@+id/noteTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Title"
+            android:text="@string/title"
             android:textStyle="bold"
             android:textSize="16sp"
             android:textColor="#000000" />
@@ -27,7 +27,7 @@
             android:id="@+id/noteContent"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Note content preview"
+            android:text="@string/cont_prev"
             android:layout_marginTop="4dp"
             android:textSize="14sp"
             android:maxLines="3"

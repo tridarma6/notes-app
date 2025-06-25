@@ -9,7 +9,7 @@
     <color name="gray_900">#212121</color>
 
     <!-- Modern primary colors -->
-    <color name="primary">#4A90E2</color> <!-- Modern soft blue -->
+    <color name="primary">#FFFFFF</color> <!-- Modern soft blue -->
     <color name="primary_dark">#357ABD</color>
     <color name="primary_light">#D0E6FA</color>
 
