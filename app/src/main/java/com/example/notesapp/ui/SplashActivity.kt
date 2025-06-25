@@ -1,10 +1,12 @@
-package com.example.notesapp
+package com.example.notesapp.ui
+
 import android.content.Intent
 import android.os.Bundle
 import android.view.animation.AlphaAnimation
 import android.view.animation.Animation
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import com.example.notesapp.R
 
 class SplashActivity : AppCompatActivity() {
 

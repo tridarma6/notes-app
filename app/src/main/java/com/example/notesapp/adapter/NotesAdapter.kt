@@ -1,10 +1,12 @@
-package com.example.notesapp
+package com.example.notesapp.adapter
 
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.example.notesapp.R
+import com.example.notesapp.data.model.Note
 
 class NotesAdapter(private val notes: List<Note>) : RecyclerView.Adapter<NotesAdapter.NoteViewHolder>() {
 
