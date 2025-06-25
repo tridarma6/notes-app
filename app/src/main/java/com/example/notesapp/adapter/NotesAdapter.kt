@@ -7,7 +7,8 @@ import com.example.notesapp.data.model.Note
 import com.example.notesapp.databinding.ItemNoteBinding
 
 class NotesAdapter(
-    private val onItemClick: (Note) -> Unit
+    private val onItemClick: (Note) -> Unit,
+    private val onItemLongClick: (Note) -> Unit
 ) : ListAdapter<Note, NotesAdapter.NoteViewHolder>(DIFF_CALLBACK) {
 
     inner class NoteViewHolder(private val binding: ItemNoteBinding) :
@@ -19,6 +20,10 @@ class NotesAdapter(
 
             binding.root.setOnClickListener {
                 onItemClick(note)
+            }
+            binding.root.setOnLongClickListener {
+                onItemLongClick(note)
+                true
             }
         }
     }
