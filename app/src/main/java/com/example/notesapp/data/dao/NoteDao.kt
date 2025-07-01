@@ -108,4 +108,7 @@ object NoteDao {
         return null
     }
 
+    fun deletePermanent(db: SQLiteDatabase, noteId: String) {
+        db.delete(TABLE_NAME, "$COLUMN_ID = ?", arrayOf(noteId))
+    }
 }

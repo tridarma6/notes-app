@@ -65,6 +65,7 @@
         app:layout_constraintEnd_toEndOf="parent">
 
         <Button
+            android:id="@+id/btnAllNotes"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             app:layout_columnWeight="1"
@@ -73,10 +74,11 @@
             android:layout_margin="8dp"
             android:drawablePadding="8dp"
             android:background="@drawable/button_background"
-            android:textColor="#1C2121"/>
+            android:textColor="@color/button_text_normal"/>
 
         <!-- Favourites -->
         <Button
+            android:id="@+id/btnFavorite"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             app:layout_columnWeight="1"
@@ -85,10 +87,11 @@
             android:layout_margin="8dp"
             android:drawablePadding="8dp"
             android:background="@drawable/button_background"
-            android:textColor="#1C2121"/>
+            android:textColor="@color/button_text_normal"/>
 
         <!-- Hidden -->
         <Button
+            android:id="@+id/btnHidden"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             app:layout_columnWeight="1"
@@ -97,10 +100,11 @@
             android:layout_margin="8dp"
             android:drawablePadding="8dp"
             android:background="@drawable/button_background"
-            android:textColor="#1C2121"/>
+            android:textColor="@color/button_text_normal"/>
 
         <!-- Trash -->
         <Button
+            android:id="@+id/btnTrash"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             app:layout_columnWeight="1"
@@ -109,10 +113,11 @@
             android:layout_margin="8dp"
             android:drawablePadding="8dp"
             android:background="@drawable/button_background"
-            android:textColor="#1C2121"/>
+            android:textColor="@color/button_text_normal"/>
 
         <!-- Category -->
         <Button
+            android:id="@+id/btnCategory"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             app:layout_columnWeight="1"
@@ -121,7 +126,7 @@
             android:layout_margin="8dp"
             android:drawablePadding="8dp"
             android:background="@drawable/button_background"
-            android:textColor="#1C2121"/>
+            android:textColor="@color/button_text_normal"/>
     </androidx.gridlayout.widget.GridLayout>
 
     <!-- Recent Notes Title -->

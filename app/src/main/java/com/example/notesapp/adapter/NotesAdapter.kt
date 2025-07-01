@@ -1,26 +1,54 @@
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
+import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.example.notesapp.R
 import com.example.notesapp.data.model.Note
 import com.example.notesapp.databinding.ItemNoteBinding
 
 class NotesAdapter(
     private val onItemClick: (Note) -> Unit,
-    private val onItemLongClick: (Note) -> Unit
+    private val onItemLongClick: (Note) -> Unit,
+    private val onFavoriteToggle: (Note) -> Unit
 ) : ListAdapter<Note, NotesAdapter.NoteViewHolder>(DIFF_CALLBACK) {
 
     inner class NoteViewHolder(private val binding: ItemNoteBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
+        private val btnFavorite = binding.btnFavorite // gunakan binding langsung
+
         fun bind(note: Note) {
             binding.noteTitle.text = note.title
             binding.noteContent.text = note.content
 
+            binding.noteFavorite.visibility = if (note.isFavorite) View.VISIBLE else View.GONE
+
+            // Ubah warna latar belakang card jika trashed
+            val bgColor = if (note.isTrashed) {
+                ContextCompat.getColor(binding.root.context, R.color.trash_background)
+            } else {
+                ContextCompat.getColor(binding.root.context, R.color.normal_background)
+            }
+            (binding.root as CardView).setCardBackgroundColor(bgColor)
+
+            // Icon toggle favorite
+            btnFavorite.setImageResource(
+                if (note.isFavorite) R.drawable.ic_favorite_filled else R.drawable.ic_favorites
+            )
+
+            btnFavorite.setOnClickListener {
+                onFavoriteToggle(note)
+            }
+
             binding.root.setOnClickListener {
                 onItemClick(note)
             }
+
             binding.root.setOnLongClickListener {
                 onItemLongClick(note)
                 true

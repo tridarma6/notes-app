@@ -1,14 +1,24 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+    <!-- Base Theme -->
     <style name="Base.Theme.NotesApp" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <item name="colorPrimary">@color/primary</item>
-        <item name="colorPrimaryVariant">@color/primary</item>
-        <item name="android:statusBarColor">@color/primary</item>
+        <item name="colorPrimary">@color/white</item>
+        <item name="colorPrimaryVariant">@color/red</item>
+        <item name="android:statusBarColor">@color/green_active</item>
+
+        <!-- NONAKTIFKAN GAYA BAWAAN UNTUK BUTTON -->
+        <item name="buttonStyle">@style/PlainButtonStyle</item>
+        <item name="materialButtonStyle">@style/PlainMaterialButtonStyle</item>
     </style>
 
+    <!-- Final Theme -->
     <style name="Theme.NotesApp" parent="Base.Theme.NotesApp" />
-    <style name="Button.White" parent="ThemeOverlay.AppCompat">
-        <item name="colorAccent">@android:color/white</item>
+
+    <style name="PlainButtonStyle" parent="Widget.AppCompat.Button">
+        <item name="backgroundTint">@null</item>
+    </style>
+
+    <style name="PlainMaterialButtonStyle" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@null</item>
+        <item name="rippleColor">@android:color/transparent</item>
     </style>
 </resources>

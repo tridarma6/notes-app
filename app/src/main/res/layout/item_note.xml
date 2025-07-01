@@ -8,13 +8,16 @@
     app:cardCornerRadius="12dp"
     app:cardElevation="4dp"
     android:layout_marginHorizontal="8dp"
-    android:layout_marginTop="8dp">
+    android:layout_marginTop="8dp"
+
+    >
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp">
+
 
         <TextView
             android:id="@+id/noteTitle"
@@ -43,5 +46,16 @@
             android:textColor="@android:color/holo_orange_dark"
             android:layout_marginTop="6dp"
             android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/btnFavorite"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_gravity="end"
+            android:src="@drawable/ic_favorites"
+            android:layout_marginTop="8dp"
+            android:contentDescription="Favorite"
+            app:tint="@android:color/holo_orange_dark"/>
+
     </LinearLayout>
 </androidx.cardview.widget.CardView>

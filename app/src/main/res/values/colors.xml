@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Neutral colors -->
-    <color name="red">#F44336</color>
+    <color name="red">#EB4D3D</color>
     <color name="gray">#757575</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
@@ -9,17 +9,17 @@
     <color name="gray_300">#E0E0E0</color>
     <color name="gray_600">#757575</color>
     <color name="gray_900">#212121</color>
+    <color name="soft_red">#FFF1F1</color>
 
-    <!-- Modern primary colors -->
-    <color name="primary">#FFFFFF</color> <!-- Modern soft blue -->
-    <color name="primary_dark">#357ABD</color>
-    <color name="primary_light">#D0E6FA</color>
-
-    <!-- Accent colors -->
-    <color name="accent">#7ED6DF</color> <!-- Light teal -->
-    <color name="warning">#F39C12</color> <!-- Amber for warning notes -->
-    <color name="success">#2ECC71</color> <!-- Green for success -->
-    <color name="danger">#E74C3C</color> <!-- Red for deletion or alerts -->
+    <color name="trash_background">#FFF1F1</color> <!-- soft red -->
+    <color name="normal_background">#FFFFFF</color>
 
     <color name="nav_item_color">#FF6200EE</color>
+    <color name="red_active">#EB4D3D</color> <!-- merah -->
+    <color name="green_active">#30BE71</color>
+    <color name="button_background_normal">#F5F5F5</color> <!-- default background -->
+    <color name="button_text_normal">#1C2121</color>
+    <color name="yellow_active">#FBC02D</color>    <!-- Favorite -->
+    <color name="blue_active">#1976D2</color>      <!-- Hidden -->
+    <color name="brown_active">#795548</color>
 </resources>
