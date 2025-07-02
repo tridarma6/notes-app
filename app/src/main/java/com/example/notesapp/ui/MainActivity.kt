@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.ColorInt
 import androidx.annotation.ColorRes
 import androidx.appcompat.app.AlertDialog
@@ -28,9 +29,23 @@ class MainActivity : AppCompatActivity() {
     private var isViewingTrash = false
     private var isViewingFavorite = false
     private var isViewingHidden = false
+    companion object {
+        const val REQUEST_VERIFY_PIN = 1001
+    }
+    private val verifyPinLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val isVerified = result.data?.getBooleanExtra("isVerified", false) ?: false
+            if (isVerified) {
+                showHiddenNotes()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -74,10 +89,9 @@ class MainActivity : AppCompatActivity() {
         binding.btnTrash.setOnClickListener {
             val db = dbHelper.readableDatabase
             val trashedNotes = NoteDao.getAll(db).filter { it.isTrashed }
+            adapter.displayMode = NoteDisplayMode.TRASH
             adapter.submitList(trashedNotes)
             binding.recentNotesTitle.text = "Trashed Notes"
-            val red = ContextCompat.getColor(this, R.color.red_active)
-            Log.d("DEBUG", "Setting bg color: $red")  // contoh hasil: -1234567
 
             resetAllQuickButtons()
             setQuickButtonState(binding.btnTrash, true, R.color.red_active)
@@ -88,7 +102,8 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnFavorite.setOnClickListener {
             val db = dbHelper.readableDatabase
-            val favoriteNotes = NoteDao.getAll(db).filter { it.isFavorite and !it.isTrashed }
+            val favoriteNotes = NoteDao.getAll(db).filter { it.isFavorite && !it.isTrashed && !it.isHidden}
+            adapter.displayMode = NoteDisplayMode.FAVORITE
             adapter.submitList(favoriteNotes)
             binding.recentNotesTitle.text = "Favorite Notes"
             resetAllQuickButtons()
@@ -100,17 +115,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnHidden.setOnClickListener {
-            val db = dbHelper.readableDatabase
-            val hiddenNotes = NoteDao.getAll(db).filter { it.isHidden and !it.isTrashed }
-            adapter.submitList(hiddenNotes)
-            binding.recentNotesTitle.text = "Hidden Notes"
-            resetAllQuickButtons()
-            setQuickButtonState(binding.btnHidden, true, R.color.blue_active)
-            isViewingTrash = false
-            isViewingFavorite = false
-            isViewingHidden = true
-
+            val intent = Intent(this, VerifyPinActivity::class.java)
+            verifyPinLauncher.launch(Intent(this, VerifyPinActivity::class.java))
         }
+
 
         binding.btnAllNotes.setOnClickListener {
             loadNotes() // tampilkan semua yang tidak di-trash
@@ -126,7 +134,22 @@ class MainActivity : AppCompatActivity() {
             isViewingFavorite = false
             isViewingHidden = false
         }
-
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.menu_notes -> {
+                    // Tampilkan Home (All Notes)
+                    loadNotes()
+                    true
+                }
+                R.id.menu_setting -> {
+                    // Arahkan ke SettingsActivity
+                    val intent = Intent(this, SettingsActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
+                else -> false
+            }
+        }
 
 
         insertDummyNotesIfEmpty()
@@ -136,15 +159,30 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        loadNotes()
+        if (!isViewingHidden && !isViewingTrash && !isViewingFavorite) {
+            loadNotes()
+        }
     }
 
     private fun loadNotes() {
         val db = dbHelper.readableDatabase
         val notes = NoteDao.getAll(db).filter { !it.isTrashed and !it.isHidden } // Hanya tampilkan yang tidak dihapus
+        adapter.displayMode = NoteDisplayMode.ALL
         adapter.submitList(notes)
     }
-
+    private fun showHiddenNotes(){
+        val db = dbHelper.readableDatabase
+        val hiddenNotes = NoteDao.getAll(db).filter { it.isHidden }
+        adapter.displayMode = NoteDisplayMode.HIDDEN
+        Log.d("MainActivity", "Jumlah hidden notes: ${hiddenNotes.size}")
+        adapter.submitList(hiddenNotes)
+        binding.recentNotesTitle.text = "Hidden Notes"
+        resetAllQuickButtons()
+        setQuickButtonState(binding.btnHidden, true, R.color.blue_active)
+        isViewingTrash = false
+        isViewingFavorite = false
+        isViewingHidden = true
+    }
     private fun insertDummyNotesIfEmpty() {
         val db = dbHelper.writableDatabase
         val notes = NoteDao.getAll(db)
@@ -159,13 +197,14 @@ class MainActivity : AppCompatActivity() {
                 Note(
                     title = "UX Design",
                     content = "Tips dan trik untuk desain UX.",
-                    categoryId = 2
+                    categoryId = 2,
+                    isHidden = true
                 ),
                 Note(
                     title = "Important",
                     content = "Catatan ini penting!",
                     categoryId = 3,
-                    isFavorite = true
+                    isTrashed = true
                 )
             )
             dummyNotes.forEach { NoteDao.insert(db, it) }
@@ -212,6 +251,7 @@ class MainActivity : AppCompatActivity() {
     private fun loadTrashedNotes() {
         val db = dbHelper.readableDatabase
         val trashedNotes = NoteDao.getAll(db).filter { it.isTrashed }
+        adapter.displayMode = NoteDisplayMode.TRASH
         adapter.submitList(trashedNotes)
     }
 

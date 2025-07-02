@@ -1,11 +1,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/nav_notes"
+    <item android:id="@+id/menu_notes"
         android:title="Notes"
         android:icon="@drawable/icon_notes" />
-    <item android:id="@+id/nav_event"
+    <item android:id="@+id/menu_event"
         android:title="Event"
         android:icon="@drawable/ic_event" />
-    <item android:id="@+id/nav_search"
-        android:title="Search"
-        android:icon="@drawable/ic_search" />
+    <item android:id="@+id/menu_setting"
+        android:title="Setting"
+        android:icon="@drawable/ic_setting" />
 </menu>

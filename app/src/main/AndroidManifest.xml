@@ -21,6 +21,9 @@
             </intent-filter>
         </activity>
         <activity android:name=".ui.AddEditNoteActivity" />
+        <activity android:name=".ui.VerifyPinActivity"/>
+        <activity android:name=".ui.SettingsActivity" />
+        <activity android:name=".ui.SetPinActivity"/>
     </application>
 
 </manifest>

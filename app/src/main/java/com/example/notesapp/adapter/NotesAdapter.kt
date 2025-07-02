@@ -11,12 +11,15 @@ import com.example.notesapp.R
 import com.example.notesapp.data.model.Note
 import com.example.notesapp.databinding.ItemNoteBinding
 
+enum class NoteDisplayMode {
+    ALL, TRASH, FAVORITE, HIDDEN, CATEGORY
+}
 class NotesAdapter(
     private val onItemClick: (Note) -> Unit,
     private val onItemLongClick: (Note) -> Unit,
     private val onFavoriteToggle: (Note) -> Unit
 ) : ListAdapter<Note, NotesAdapter.NoteViewHolder>(DIFF_CALLBACK) {
-
+    var displayMode: NoteDisplayMode = NoteDisplayMode.ALL
     inner class NoteViewHolder(private val binding: ItemNoteBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
@@ -29,12 +32,15 @@ class NotesAdapter(
             binding.noteFavorite.visibility = if (note.isFavorite) View.VISIBLE else View.GONE
 
             // Ubah warna latar belakang card jika trashed
-            val bgColor = if (note.isTrashed) {
-                ContextCompat.getColor(binding.root.context, R.color.trash_background)
-            } else {
-                ContextCompat.getColor(binding.root.context, R.color.normal_background)
+            val bgColor = when {
+                note.isTrashed -> ContextCompat.getColor(binding.root.context, R.color.trash_background)
+                note.isFavorite -> ContextCompat.getColor(binding.root.context, R.color.soft_yellow)
+                note.isHidden -> ContextCompat.getColor(binding.root.context, R.color.soft_blue)
+                displayMode == NoteDisplayMode.ALL -> ContextCompat.getColor(binding.root.context, R.color.soft_green)
+                else -> ContextCompat.getColor(binding.root.context, R.color.normal_background)
             }
             (binding.root as CardView).setCardBackgroundColor(bgColor)
+
 
             // Icon toggle favorite
             binding.btnFavorite.setImageResource(

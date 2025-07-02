@@ -10,10 +10,12 @@
     <color name="gray_600">#757575</color>
     <color name="gray_900">#212121</color>
     <color name="soft_red">#FFF1F1</color>
-
+    <color name="soft_yellow">#F4E8C2</color>
+    <color name="soft_blue">#E2E9F7</color>
+    <color name="soft_green">#CDF3DD</color>
     <color name="trash_background">#FFF1F1</color> <!-- soft red -->
     <color name="normal_background">#FFFFFF</color>
-
+    <color name="text_color">#1C2121</color>
     <color name="nav_item_color">#FF6200EE</color>
     <color name="red_active">#EB4D3D</color> <!-- merah -->
     <color name="green_active">#30BE71</color>
