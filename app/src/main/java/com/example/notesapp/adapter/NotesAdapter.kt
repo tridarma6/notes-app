@@ -20,7 +20,7 @@ class NotesAdapter(
     inner class NoteViewHolder(private val binding: ItemNoteBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
-        private val btnFavorite = binding.btnFavorite // gunakan binding langsung
+         // gunakan binding langsung
 
         fun bind(note: Note) {
             binding.noteTitle.text = note.title
@@ -37,11 +37,11 @@ class NotesAdapter(
             (binding.root as CardView).setCardBackgroundColor(bgColor)
 
             // Icon toggle favorite
-            btnFavorite.setImageResource(
+            binding.btnFavorite.setImageResource(
                 if (note.isFavorite) R.drawable.ic_favorite_filled else R.drawable.ic_favorites
             )
 
-            btnFavorite.setOnClickListener {
+            binding.btnFavorite.setOnClickListener {
                 onFavoriteToggle(note)
             }
 

@@ -51,12 +51,13 @@ class MainActivity : AppCompatActivity() {
                 }
             },
             onFavoriteToggle = { note ->
-                note.isFavorite = !note.isFavorite
-                NoteDao.update(dbHelper.writableDatabase, note)
+                val updatedNote = note.copy(isFavorite = !note.isFavorite)
+                NoteDao.update(dbHelper.writableDatabase, updatedNote)
                 val updatedList = adapter.currentList.map {
-                    if (it.id == note.id) note else it
+                    if (it.id == note.id) updatedNote else it
                 }
                 adapter.submitList(updatedList)
+
             }
         )
 
@@ -213,6 +214,7 @@ class MainActivity : AppCompatActivity() {
         val trashedNotes = NoteDao.getAll(db).filter { it.isTrashed }
         adapter.submitList(trashedNotes)
     }
+
 
     private fun createRoundedBackground(@ColorInt bgColor: Int): Drawable {
         return GradientDrawable().apply {
