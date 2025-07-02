@@ -13,6 +13,8 @@
     <string name="save">Save</string>
     <string name="save_pin">Simpan PIN</string>
     <string name="add_pin">Masukkan PIN</string>
+    <string name="confirm_pin">Konfirmasi PIN</string>
+    <string name="batal">Batal</string>
 
 
 
