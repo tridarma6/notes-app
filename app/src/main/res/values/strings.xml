@@ -9,6 +9,11 @@
     <string name="trash">Trash</string>
     <string name="category">Category</string>
     <string name="recent_notes">Recent Notes</string>
+    <string name="back">Back</string>
+    <string name="save">Save</string>
+    <string name="save_pin">Simpan PIN</string>
+
+
 
 
 </resources>
