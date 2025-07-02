@@ -1,11 +1,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@+id/menu_notes"
-        android:title="Notes"
+        android:title="@string/notes"
         android:icon="@drawable/icon_notes" />
     <item android:id="@+id/menu_event"
-        android:title="Event"
+        android:title="@string/event"
         android:icon="@drawable/ic_event" />
     <item android:id="@+id/menu_setting"
-        android:title="Setting"
+        android:title="@string/setting"
         android:icon="@drawable/ic_setting" />
 </menu>
