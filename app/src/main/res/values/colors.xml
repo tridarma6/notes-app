@@ -27,5 +27,7 @@
     <color name="background_light">#F5F5F7</color>
     <color name="green_primary">#34C759</color>
     <color name="gray_spinner">#CCCCCC</color>
+    <color name="fab_orange">#FF9800</color>
+
 
 </resources>
