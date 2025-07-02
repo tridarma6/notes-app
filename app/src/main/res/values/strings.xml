@@ -15,6 +15,9 @@
     <string name="add_pin">Masukkan PIN</string>
     <string name="confirm_pin">Konfirmasi PIN</string>
     <string name="batal">Batal</string>
+    <string name="setting">Settings</string>
+    <string name="dark_mode">Dark Mode</string>
+    <string name="set_pin">Set PIN</string>
 
 
 
