@@ -23,7 +23,7 @@
             android:id="@+id/noteTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Note Title"
+            android:text="@string/note_title"
             android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="@android:color/black" />
@@ -32,7 +32,7 @@
             android:id="@+id/noteContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Note Content"
+            android:text="@string/note_content"
             android:textSize="14sp"
             android:textColor="@android:color/darker_gray"
             android:layout_marginTop="4dp" />
@@ -41,7 +41,7 @@
             android:id="@+id/noteFavorite"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="★ Favorite"
+            android:text="@string/star_favorite"
             android:textSize="12sp"
             android:textColor="@android:color/holo_orange_dark"
             android:layout_marginTop="6dp"
@@ -54,7 +54,7 @@
             android:layout_gravity="end"
             android:src="@drawable/ic_favorites"
             android:layout_marginTop="8dp"
-            android:contentDescription="Favorite"
+            android:contentDescription="@string/favourite"
             app:tint="@android:color/holo_orange_dark"/>
 
     </LinearLayout>
