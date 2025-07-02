@@ -57,6 +57,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <Spinner
+        android:id="@+id/spinnerCategory"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#CCCCCC"
+        android:layout_marginEnd="16dp"
+        app:layout_constraintTop_toTopOf="@id/editTitle"
+        app:layout_constraintBottom_toBottomOf="@id/editTitle"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <!-- Isi catatan -->
     <EditText
         android:id="@+id/editContent"

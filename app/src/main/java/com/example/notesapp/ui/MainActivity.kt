@@ -2,6 +2,10 @@ package com.example.notesapp.ui
 
 import NotesAdapter
 import android.content.Intent
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -15,6 +19,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.RecyclerView
 import com.example.notesapp.R
 import com.example.notesapp.data.dao.NoteDao
 import com.example.notesapp.data.db.NotesDatabaseHelper
@@ -80,6 +86,113 @@ class MainActivity : AppCompatActivity() {
         // Setup RecyclerView
         binding.recyclerRecentNotes.layoutManager = GridLayoutManager(this, 2)
         binding.recyclerRecentNotes.adapter = adapter
+        val swipeCallback = object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean = false
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.adapterPosition
+                val note = adapter.currentList[position]
+
+                if (direction == ItemTouchHelper.LEFT && !note.isHidden && !note.isTrashed) {
+                    // Hide Note
+                    hideNote(note)
+                } else if (direction == ItemTouchHelper.RIGHT && isViewingHidden) {
+                    // Unhide Note
+                    unhideNote(note)
+                }
+
+                refreshCurrentView()
+            }
+
+
+            override fun onChildDraw(
+                c: Canvas,
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                dX: Float, dY: Float,
+                actionState: Int, isCurrentlyActive: Boolean
+            ) {
+                val itemView = viewHolder.itemView
+                val context = itemView.context
+
+                if (dX < 0) { // Swipe ke kiri
+                    val paint = Paint().apply {
+                        color = ContextCompat.getColor(context, R.color.blue_active)
+                    }
+
+                    // Gambar latar belakang biru
+                    c.drawRect(
+                        itemView.right + dX, itemView.top.toFloat(),
+                        itemView.right.toFloat(), itemView.bottom.toFloat(), paint
+                    )
+
+                    // Gambar ikon
+                    val icon = ContextCompat.getDrawable(context, R.drawable.ic_hidden)
+                    icon?.let {
+                        val iconSize = 48 // Ukuran kecil (px)
+                        val iconTop = itemView.top + (itemView.height - iconSize) / 2
+                        val iconLeft = itemView.right - iconSize - 32
+                        val iconRight = itemView.right - 32
+                        val iconBottom = iconTop + iconSize
+
+                        it.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+                        it.draw(c)
+                    }
+
+                    // Tampilkan teks "Hide note?"
+                    val textPaint = Paint().apply {
+                        color = Color.WHITE
+                        textSize = 40f
+                        isAntiAlias = true
+                        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                    }
+                    val text = "Hide note?"
+                    val textX = itemView.right - 250f
+                    val textY = itemView.top + itemView.height / 2f + 15f
+                    c.drawText(text, textX, textY, textPaint)
+                }
+                if (dX > 0 && isViewingHidden) {
+                    val paint = Paint().apply {
+                        color = ContextCompat.getColor(context, R.color.soft_green)
+                    }
+
+                    c.drawRect(
+                        itemView.left.toFloat(), itemView.top.toFloat(),
+                        itemView.left + dX, itemView.bottom.toFloat(), paint
+                    )
+
+                    // Gambar icon unhide (misal mata terbuka)
+                    val icon = ContextCompat.getDrawable(context, R.drawable.ic_hidden)
+                    icon?.let {
+                        val iconSize = 48
+                        val iconTop = itemView.top + (itemView.height - iconSize) / 2
+                        val iconLeft = itemView.left + 32
+                        val iconRight = iconLeft + iconSize
+                        val iconBottom = iconTop + iconSize
+
+                        it.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+                        it.draw(c)
+                    }
+
+                    // Teks "Unhide note?"
+                    val textPaint = Paint().apply {
+                        color = Color.WHITE
+                        textSize = 40f
+                        isAntiAlias = true
+                        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                    }
+                    c.drawText("Unhide note?", itemView.left + 100f, itemView.top + itemView.height / 2f + 15f, textPaint)
+                }
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
+            }
+
+        }
+
+        ItemTouchHelper(swipeCallback).attachToRecyclerView(binding.recyclerRecentNotes)
 
         binding.fabAddNote.setOnClickListener {
             val intent = Intent(this, AddEditNoteActivity::class.java)
@@ -120,6 +233,7 @@ class MainActivity : AppCompatActivity() {
         }
 
 
+
         binding.btnAllNotes.setOnClickListener {
             loadNotes() // tampilkan semua yang tidak di-trash
             binding.recentNotesTitle.text = getString(R.string.recent_notes)
@@ -157,6 +271,7 @@ class MainActivity : AppCompatActivity() {
         loadNotes()
     }
 
+
     override fun onResume() {
         super.onResume()
         if (!isViewingHidden && !isViewingTrash && !isViewingFavorite) {
@@ -183,6 +298,36 @@ class MainActivity : AppCompatActivity() {
         isViewingFavorite = false
         isViewingHidden = true
     }
+
+    private fun hideNote(note: Note) {
+        val updatedNote = note.copy(isHidden = true)
+        NoteDao.update(dbHelper.writableDatabase, updatedNote)
+        val updatedList = adapter.currentList.filter { it.id != note.id }
+        adapter.submitList(updatedList)
+        Toast.makeText(this, "Catatan disembunyikan", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun unhideNote(note: Note) {
+        val updatedNote = note.copy(isHidden = false)
+        NoteDao.update(dbHelper.writableDatabase, updatedNote)
+        val updatedList = adapter.currentList.filter { it.id != note.id }
+        adapter.submitList(updatedList)
+        Toast.makeText(this, "Catatan ditampilkan", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun refreshCurrentView() {
+        when {
+            isViewingTrash -> loadTrashedNotes()
+            isViewingFavorite -> {
+                val db = dbHelper.readableDatabase
+                val favoriteNotes = NoteDao.getAll(db).filter { it.isFavorite && !it.isTrashed && !it.isHidden }
+                adapter.submitList(favoriteNotes)
+            }
+            isViewingHidden -> showHiddenNotes()
+            else -> loadNotes()
+        }
+    }
+
     private fun insertDummyNotesIfEmpty() {
         val db = dbHelper.writableDatabase
         val notes = NoteDao.getAll(db)
