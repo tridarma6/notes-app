@@ -24,7 +24,7 @@
     <color name="yellow_active">#FBC02D</color>    <!-- Favorite -->
     <color name="blue_active">#1976D2</color>      <!-- Hidden -->
     <color name="brown_active">#795548</color>
-    <color name="background_light">#F5F5F7</color>
+    <color name="background">#F5F5F7</color>
     <color name="green_primary">#34C759</color>
     <color name="gray_spinner">#CCCCCC</color>
     <color name="fab_orange">#FF9800</color>
