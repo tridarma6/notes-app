@@ -2,4 +2,6 @@
 <resources>
     <color name="text_color">#FFFFFF</color>
     <color name="background">#23202B</color>
+    <color name="green_active">#033E23</color>
+    <color name="button_text_normal">#FFFFFF</color>
 </resources>
