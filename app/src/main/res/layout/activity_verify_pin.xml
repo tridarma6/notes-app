@@ -33,7 +33,7 @@
         android:id="@+id/tvEnterPin"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/enter_your_old_pin"
+        android:text="@string/enter_your_pin"
         android:textSize="20sp"
         android:textColor="@android:color/black"
         app:layout_constraintTop_toBottomOf="@id/backArrow"
