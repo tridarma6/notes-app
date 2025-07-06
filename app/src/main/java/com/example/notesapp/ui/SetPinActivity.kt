@@ -5,54 +5,78 @@ import android.os.Bundle
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.example.notesapp.R // Pastikan ini diimpor untuk mengakses R.drawable dan R.string
-import com.example.notesapp.databinding.ActivitySetPinBinding // Sesuaikan dengan nama layout XML Anda
-import com.example.notesapp.util.PinManager // Asumsikan ini adalah utilitas untuk menyimpan PIN
+import com.example.notesapp.R
+import com.example.notesapp.databinding.ActivitySetPinBinding
+import com.example.notesapp.util.PinManager
 
 class SetPinActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySetPinBinding
-    private val enteredPin = StringBuilder() // Untuk menyimpan PIN yang sedang dimasukkan pengguna
-    private var firstPin: String? = null // Untuk menyimpan PIN yang dimasukkan pertama kali
-
-    // Anda bisa menyesuaikan panjang PIN di sini
-    private val PIN_LENGTH = 4
+    private val enteredPin = StringBuilder()
+    private var firstPin: String? = null // Untuk menyimpan PIN baru yang dimasukkan pertama kali
+    private val PIN_LENGTH = 4 // Panjang PIN yang diharapkan
 
     // Enum untuk mengelola state input PIN
     private enum class PinInputState {
+        VERIFY_OLD_PIN, // State baru: Verifikasi PIN lama
         ENTER_NEW_PIN,
         CONFIRM_NEW_PIN
     }
 
-    private var currentState: PinInputState = PinInputState.ENTER_NEW_PIN
+    private var currentState: PinInputState = PinInputState.VERIFY_OLD_PIN // State awal
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySetPinBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // --- Inisialisasi Tampilan Awal ---
+        // Tentukan state awal berdasarkan apakah PIN sudah diatur atau belum
+        if (PinManager.isPinSet(this)) {
+            currentState = PinInputState.VERIFY_OLD_PIN
+            binding.tvPinInputTitle.text = getString(R.string.enter_your_old_pin)
+        } else {
+            // Jika belum ada PIN lama, langsung ke pengaturan PIN baru
+            currentState = PinInputState.ENTER_NEW_PIN
+            binding.tvPinInputTitle.text = getString(R.string.enter_your_new_pin)
+        }
+
         updatePinDots() // Semua dot kosong saat awal
-        binding.tvPinInputTitle.text = getString(R.string.enter_your_new_pin) // Set judul awal
 
         // --- Listener untuk Tombol "Back" (Panah + Teks) ---
         binding.backArrow.setOnClickListener {
-            // Jika pengguna menekan back saat di tahap konfirmasi, kembali ke tahap enter PIN
-            if (currentState == PinInputState.CONFIRM_NEW_PIN) {
-                firstPin = null // Reset PIN pertama
-                enteredPin.clear() // Hapus input saat ini
-                updatePinDots() // Reset dot tampilan
-                currentState = PinInputState.ENTER_NEW_PIN // Kembali ke fase input pertama
-                binding.tvPinInputTitle.text = getString(R.string.enter_your_new_pin)
-            } else {
-                // Jika di tahap enter PIN, atau setelah PIN berhasil diatur, finish activity
-                setResult(Activity.RESULT_CANCELED) // Mengindikasikan pembatalan
-                finish()
+            when (currentState) {
+                PinInputState.VERIFY_OLD_PIN -> {
+                    // Jika di tahap verifikasi PIN lama, langsung batal dan kembali
+                    setResult(Activity.RESULT_CANCELED)
+                    finish()
+                }
+                PinInputState.CONFIRM_NEW_PIN -> {
+                    // Jika di tahap konfirmasi PIN baru, kembali ke tahap enter PIN baru
+                    enteredPin.clear()
+                    updatePinDots()
+                    currentState = PinInputState.ENTER_NEW_PIN
+                    binding.tvPinInputTitle.text = getString(R.string.enter_your_new_pin)
+                    Toast.makeText(this, "Silakan masukkan PIN baru Anda lagi.", Toast.LENGTH_SHORT).show()
+                }
+                PinInputState.ENTER_NEW_PIN -> {
+                    // Jika di tahap enter PIN baru, kembali ke tahap verifikasi PIN lama
+                    // Hanya jika ada PIN lama yang tersimpan
+                    if (PinManager.isPinSet(this)) {
+                        enteredPin.clear()
+                        updatePinDots()
+                        currentState = PinInputState.VERIFY_OLD_PIN
+                        binding.tvPinInputTitle.text = getString(R.string.enter_your_old_pin)
+                        Toast.makeText(this, "Silakan masukkan PIN lama Anda lagi.", Toast.LENGTH_SHORT).show()
+                    } else {
+                        // Jika tidak ada PIN lama, ini adalah pengaturan pertama, jadi batal saja
+                        setResult(Activity.RESULT_CANCELED)
+                        finish()
+                    }
+                }
             }
         }
         binding.backText.setOnClickListener {
-            // Sama dengan backArrow
-            binding.backArrow.performClick()
+            binding.backArrow.performClick() // Panggil listener backArrow
         }
 
         // --- Listener untuk Tombol Keypad Numerik ---
@@ -80,7 +104,6 @@ class SetPinActivity : AppCompatActivity() {
                 if (enteredPin.length < PIN_LENGTH) {
                     enteredPin.append(digit)
                     updatePinDots()
-                    // Otomatis memproses PIN setelah mencapai panjang yang ditentukan
                     if (enteredPin.length == PIN_LENGTH) {
                         handlePinCompletion()
                     }
@@ -102,32 +125,43 @@ class SetPinActivity : AppCompatActivity() {
     }
 
     private fun handlePinCompletion() {
-        when (currentState) {
-            PinInputState.ENTER_NEW_PIN -> {
-                val currentPinInput = enteredPin.toString()
+        val currentInput = enteredPin.toString()
 
-                // Validasi panjang PIN (Anda sudah punya logika ini)
-                if (currentPinInput.length < PIN_LENGTH) {
-                    // Ini seharusnya tidak terpanggil jika PIN_LENGTH sudah terpenuhi,
-                    // tapi sebagai fallback
+        when (currentState) {
+            PinInputState.VERIFY_OLD_PIN -> {
+                val oldPin = PinManager.getPin(this)
+                if (oldPin != null && currentInput == oldPin) {
+                    // PIN lama cocok, lanjutkan ke pengaturan PIN baru
+                    enteredPin.clear()
+                    updatePinDots()
+                    currentState = PinInputState.ENTER_NEW_PIN
+                    binding.tvPinInputTitle.text = getString(R.string.enter_your_new_pin)
+                    Toast.makeText(this, "PIN lama cocok. Silakan masukkan PIN baru Anda.", Toast.LENGTH_SHORT).show()
+                } else {
+                    // PIN lama tidak cocok
+                    Toast.makeText(this, "PIN lama salah. Silakan coba lagi.", Toast.LENGTH_LONG).show()
+                    enteredPin.clear()
+                    updatePinDots()
+                }
+            }
+            PinInputState.ENTER_NEW_PIN -> {
+                // Validasi panjang PIN
+                if (currentInput.length < PIN_LENGTH) {
                     Toast.makeText(this, "PIN harus minimal $PIN_LENGTH digit", Toast.LENGTH_SHORT).show()
                     enteredPin.clear()
                     updatePinDots()
                     return
                 }
 
-                firstPin = currentPinInput // Simpan PIN pertama
+                firstPin = currentInput // Simpan PIN baru yang pertama
                 enteredPin.clear() // Reset untuk input konfirmasi
                 updatePinDots() // Reset dot tampilan
                 currentState = PinInputState.CONFIRM_NEW_PIN // Pindah ke state konfirmasi
                 binding.tvPinInputTitle.text = getString(R.string.confirm_your_new_pin) // Ubah judul
-                Toast.makeText(this, "PIN pertama sudah direkam. Masukkan ulang PIN untuk konfirmasi.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "PIN baru sudah direkam. Masukkan ulang PIN untuk konfirmasi.", Toast.LENGTH_LONG).show()
             }
-
             PinInputState.CONFIRM_NEW_PIN -> {
-                val confirmedPin = enteredPin.toString()
-
-                if (firstPin == confirmedPin) {
+                if (firstPin == currentInput) {
                     // PIN cocok! Simpan menggunakan PinManager
                     PinManager.savePin(this, firstPin!!)
                     Toast.makeText(this, "PIN berhasil diatur dan disimpan!", Toast.LENGTH_SHORT).show()
@@ -135,12 +169,18 @@ class SetPinActivity : AppCompatActivity() {
                     finish()
                 } else {
                     // PIN tidak cocok
-                    Toast.makeText(this, "PIN tidak cocok. Silakan coba lagi dari awal.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "PIN baru tidak cocok. Silakan coba lagi dari awal.", Toast.LENGTH_LONG).show()
                     firstPin = null // Reset PIN pertama
                     enteredPin.clear() // Hapus PIN yang dimasukkan saat ini
                     updatePinDots() // Reset dot tampilan
-                    currentState = PinInputState.ENTER_NEW_PIN // Kembali ke fase input pertama
-                    binding.tvPinInputTitle.text = getString(R.string.enter_your_new_pin) // Kembalikan judul
+                    // Kembali ke state verifikasi PIN lama jika ada, atau langsung ke enter PIN baru
+                    if (PinManager.isPinSet(this)) {
+                        currentState = PinInputState.VERIFY_OLD_PIN
+                        binding.tvPinInputTitle.text = getString(R.string.enter_your_old_pin)
+                    } else {
+                        currentState = PinInputState.ENTER_NEW_PIN
+                        binding.tvPinInputTitle.text = getString(R.string.enter_your_new_pin)
+                    }
                 }
             }
         }
