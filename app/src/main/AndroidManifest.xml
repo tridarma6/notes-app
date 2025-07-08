@@ -24,6 +24,14 @@
         <activity android:name=".ui.VerifyPinActivity"/>
         <activity android:name=".ui.SettingsActivity" />
         <activity android:name=".ui.SetPinActivity"/>
+        <activity android:name=".ui.SetSecurityQuestionActivity"
+            android:exported="false" />
+
+        <activity android:name=".ui.InputSecurityAnswerActivity"
+            android:exported="false" />
+
+        <activity android:name=".ui.PinRecoveryActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
