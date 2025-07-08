@@ -33,6 +33,27 @@
     <string name="enter_your_new_pin">Enter your new PIN</string>
     <string name="confirm_your_new_pin">Confirm your new PIN</string>
 
+    <string name="security_question_setup_title">Set Security Question</string>
+    <string name="select_your_question">Select your secret question:</string>
+    <string name="next">Next</string>
+    <string name="input_security_answer_title">Input Your Answer</string>
+    <string name="your_selected_question">Your question:</string>
+    <string name="enter_your_answer">Enter your answer</string>
+    <string name="save_answer">Save Answer</string>
+    <string name="forgot_pin_question">Forgot PIN?</string>
+    <string name="forgot_pin_title">Reset Your PIN</string>
+    <string name="verify_answer">Verify Answer</string>
+    <string name="no_security_question_set">No security question has been set.</string>
+    <string name="error_question_not_found">Error: Question not found.</string>
+
+    <string-array name="security_questions">
+        <item>-- Select a question --</item>
+        <item>What was your first pet\'s name?</item>
+        <item>What city were you born in?</item>
+        <item>What is your favorite color?</item>
+        <item>What is your mother\'s maiden name?</item>
+        <item>What was the make of your first car?</item>
+    </string-array>
 
 
 
