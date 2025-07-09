@@ -1,0 +1,18 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <EditText
+        android:id="@+id/editCategoryName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nama Kategori"/>
+
+    <EditText
+        android:id="@+id/editCategoryColor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Warna (misal: #FF0000)"/>
+</LinearLayout>

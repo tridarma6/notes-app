@@ -2,6 +2,7 @@ package com.example.notesapp.data.dao
 
 import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
+import android.util.Log
 import com.example.notesapp.data.model.Note
 
 object NoteDao {
@@ -74,7 +75,7 @@ object NoteDao {
         return db.delete(TABLE_NAME, "$COLUMN_ID=?", arrayOf(noteId)) > 0
     }
 
-    fun update(db: SQLiteDatabase, note: Note) {
+    fun update(db: SQLiteDatabase, note: Note): Int { // Mengembalikan Int
         val values = ContentValues().apply {
             put(COLUMN_TITLE, note.title)
             put(COLUMN_CONTENT, note.content)
@@ -83,7 +84,11 @@ object NoteDao {
             put(COLUMN_IS_HIDDEN, if (note.isHidden) 1 else 0)
             put(COLUMN_IS_TRASHED, if (note.isTrashed) 1 else 0)
         }
-        db.update(TABLE_NAME, values, "$COLUMN_ID = ?", arrayOf(note.id))
+        val rowsAffected = db.update(TABLE_NAME, values, "$COLUMN_ID = ?", arrayOf(note.id))
+        Log.d("NoteDao", "Attempting to update note with ID: ${note.id}")
+        Log.d("NoteDao", "Update query: Table=$TABLE_NAME, Where=$COLUMN_ID = ?, Args=${note.id}")
+        Log.d("NoteDao", "Update result: Rows affected = $rowsAffected") // Log hasil
+        return rowsAffected
     }
 
     fun getById(db: SQLiteDatabase, id: String): Note? {

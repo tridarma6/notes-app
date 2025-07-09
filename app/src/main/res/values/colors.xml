@@ -13,6 +13,7 @@
     <color name="soft_yellow">#F4E8C2</color>
     <color name="soft_blue">#E2E9F7</color>
     <color name="soft_green">#CDF3DD</color>
+    <color name="soft_brown">#D7A391</color>
     <color name="trash_background">#FFF1F1</color> <!-- soft red -->
     <color name="normal_background">#FFFFFF</color>
     <color name="text_color">#1C2121</color>
@@ -23,7 +24,7 @@
     <color name="button_text_normal">#1C2121</color>
     <color name="yellow_active">#FBC02D</color>    <!-- Favorite -->
     <color name="blue_active">#1976D2</color>      <!-- Hidden -->
-    <color name="brown_active">#795548</color>
+    <color name="brown_active">#C86055</color>
     <color name="background">#F5F5F7</color>
     <color name="green_primary">#34C759</color>
     <color name="gray_spinner">#CCCCCC</color>

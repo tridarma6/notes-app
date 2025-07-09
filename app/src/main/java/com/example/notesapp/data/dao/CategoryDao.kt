@@ -2,6 +2,7 @@ package com.example.notesapp.data.dao
 
 import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
+import com.example.notesapp.data.db.NotesDatabaseHelper
 import com.example.notesapp.data.model.Category
 
 object CategoryDao {
@@ -31,21 +32,47 @@ object CategoryDao {
     }
 
     fun getAll(db: SQLiteDatabase): List<Category> {
-        val list = mutableListOf<Category>()
-        val cursor = db.rawQuery("SELECT * FROM $TABLE_NAME", null)
+        val categories = mutableListOf<Category>()
+        val cursor = db.rawQuery("SELECT * FROM $TABLE_NAME ORDER BY $COLUMN_ID ASC", null)
         if (cursor.moveToFirst()) {
             do {
-                list.add(
-                    Category(
-                        id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ID)),
-                        name = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_NAME)),
-                        colorHex = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_COLOR))
-                    )
+                val category = Category(
+                    id = cursor.getInt(cursor.getColumnIndexOrThrow("id")),
+                    name = cursor.getString(cursor.getColumnIndexOrThrow("name")),
+                    colorHex = cursor.getString(cursor.getColumnIndexOrThrow("color"))
                 )
+                categories.add(category)
             } while (cursor.moveToNext())
         }
         cursor.close()
-        return list
+        return categories
+    }
+
+    fun getAllNames(db: SQLiteDatabase): List<String> {
+        val names = mutableListOf<String>()
+        val cursor = db.rawQuery("SELECT $COLUMN_NAME FROM $TABLE_NAME", null)
+        if (cursor.moveToFirst()) {
+            do {
+                names.add(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_NAME)))
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return names
+    }
+
+    fun getNameById(dbHelper: NotesDatabaseHelper, id: Int?): String {
+        val db = dbHelper.readableDatabase
+        val cursor = db.rawQuery(
+            "SELECT $COLUMN_NAME FROM $TABLE_NAME WHERE $COLUMN_ID = ?",
+            arrayOf(id.toString())
+        )
+
+        var name = ""
+        if (cursor.moveToFirst()) {
+            name = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_NAME))
+        }
+        cursor.close()
+        return name
     }
 
     fun insert(db: SQLiteDatabase, category: Category): Boolean {
@@ -55,4 +82,9 @@ object CategoryDao {
         }
         return db.insert(TABLE_NAME, null, values) != -1L
     }
+
+    fun deleteAll(db: SQLiteDatabase){
+        db.delete(TABLE_NAME, null, null) // menghapus semua baris di tabel
+    }
+
 }

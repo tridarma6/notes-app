@@ -1,5 +1,6 @@
 package com.example.notesapp.ui
 
+import CategoriesAdapter
 import NotesAdapter
 import android.content.Intent
 import android.graphics.Canvas
@@ -10,6 +11,7 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.Button
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -20,10 +22,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.notesapp.R
+import com.example.notesapp.data.dao.CategoryDao
 import com.example.notesapp.data.dao.NoteDao
 import com.example.notesapp.data.db.NotesDatabaseHelper
+import com.example.notesapp.data.model.Category
 import com.example.notesapp.data.model.Note
 import com.example.notesapp.databinding.ActivityMainBinding
 
@@ -32,6 +37,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var dbHelper: NotesDatabaseHelper
     private lateinit var adapter: NotesAdapter
+    private lateinit var categoryAdapter: CategoriesAdapter
+    private lateinit var categoryList: List<Category>
     private var isViewingTrash = false
     private var isViewingFavorite = false
     private var isViewingHidden = false
@@ -51,7 +58,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -81,7 +87,13 @@ class MainActivity : AppCompatActivity() {
 
             }
         )
-
+        categoryList = CategoryDao.getAll(dbHelper.readableDatabase)
+        categoryAdapter = CategoriesAdapter(categoryList) { selectedCategory ->
+            Toast.makeText(this, "Kategori: ${selectedCategory.name}", Toast.LENGTH_SHORT).show()
+            // TODO: Filter note berdasarkan kategori jika dibutuhkan
+        }
+        binding.recyclerCategory.adapter = categoryAdapter
+        binding.recyclerCategory.layoutManager = LinearLayoutManager(this)
 
         // Setup RecyclerView
         binding.recyclerRecentNotes.layoutManager = GridLayoutManager(this, 2)
@@ -211,8 +223,24 @@ class MainActivity : AppCompatActivity() {
             isViewingTrash = true
             isViewingFavorite = false
             isViewingHidden = false
+            binding.recyclerCategory.visibility = View.GONE
+            binding.recyclerRecentNotes.visibility = View.VISIBLE
         }
 
+        binding.btnCategory.setOnClickListener {
+            binding.recyclerRecentNotes.visibility = View.GONE
+            binding.recyclerCategory.visibility = View.VISIBLE
+            val db = dbHelper.readableDatabase
+            val categories = CategoryDao.getAll(db)
+            adapter.displayMode = NoteDisplayMode.CATEGORY
+            resetAllQuickButtons()
+            setQuickButtonState(binding.btnCategory, true, R.color.brown_active)
+            binding.recentNotesTitle.text = getString(R.string.categories)
+            isViewingTrash = false
+            isViewingFavorite = false
+            isViewingHidden = false
+
+        }
         binding.btnFavorite.setOnClickListener {
             val db = dbHelper.readableDatabase
             val favoriteNotes = NoteDao.getAll(db).filter { it.isFavorite && !it.isTrashed && !it.isHidden}
@@ -224,12 +252,15 @@ class MainActivity : AppCompatActivity() {
             isViewingTrash = false
             isViewingFavorite = true
             isViewingHidden = false
-
+            binding.recyclerCategory.visibility = View.GONE
+            binding.recyclerRecentNotes.visibility = View.VISIBLE
         }
 
         binding.btnHidden.setOnClickListener {
             val intent = Intent(this, VerifyPinActivity::class.java)
             verifyPinLauncher.launch(Intent(this, VerifyPinActivity::class.java))
+            binding.recyclerCategory.visibility = View.GONE
+            binding.recyclerRecentNotes.visibility = View.VISIBLE
         }
 
 
@@ -247,6 +278,8 @@ class MainActivity : AppCompatActivity() {
             isViewingTrash = false
             isViewingFavorite = false
             isViewingHidden = false
+            binding.recyclerCategory.visibility = View.GONE
+            binding.recyclerRecentNotes.visibility = View.VISIBLE
         }
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
@@ -265,8 +298,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-
+//
         insertDummyNotesIfEmpty()
+        insertDummyCategoriesIfEmpty()
+
 
         loadNotes()
     }
@@ -353,6 +388,35 @@ class MainActivity : AppCompatActivity() {
                 )
             )
             dummyNotes.forEach { NoteDao.insert(db, it) }
+        }
+    }
+    private fun insertDummyCategoriesIfEmpty(){
+        val db = dbHelper.writableDatabase
+        val categories = CategoryDao.getAll(db)
+        if (categories.isEmpty()){
+            val dummyCategory = listOf(
+                Category(
+                    name = "Food",
+                    colorHex = "#FF6F61"
+                ),
+                Category(
+                    name = "Bill",
+                    colorHex = "#FFD700"
+                ),
+                Category(
+                    name = "Work",
+                    colorHex = "#4B9CD3"
+                ),
+                Category(
+                    name = "Idea",
+                    colorHex = "#9C27B0"
+                ),
+                Category(
+                    name = "Health",
+                    colorHex = "#4CAF50"
+                )
+            )
+            dummyCategory.forEach { CategoryDao.insert(db, it) }
         }
     }
 

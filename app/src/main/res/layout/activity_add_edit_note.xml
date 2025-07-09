@@ -62,8 +62,9 @@
         android:id="@+id/spinnerCategory"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:backgroundTint="@color/gray_spinner"
+        android:background="@color/background"
         android:layout_marginEnd="16dp"
+        android:spinnerMode="dropdown"
         app:layout_constraintTop_toTopOf="@id/editTitle"
         app:layout_constraintBottom_toBottomOf="@id/editTitle"
         app:layout_constraintEnd_toEndOf="parent" />

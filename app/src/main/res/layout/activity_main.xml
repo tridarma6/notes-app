@@ -142,7 +142,7 @@
         app:layout_constraintTop_toBottomOf="@id/quickButtons"
         app:layout_constraintStart_toStartOf="parent"/>
 
-    <!-- RecyclerView for Recent Notes -->
+    <!-- RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerRecentNotes"
         android:layout_width="0dp"
@@ -151,6 +151,19 @@
         android:paddingHorizontal="8dp"
         app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
         app:spanCount="2"
+        app:layout_constraintTop_toBottomOf="@id/recentNotesTitle"
+        app:layout_constraintBottom_toTopOf="@+id/bottom_navigation"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- RecyclerView untuk daftar Kategori -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerCategory"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        android:paddingHorizontal="8dp"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
         app:layout_constraintTop_toBottomOf="@id/recentNotesTitle"
         app:layout_constraintBottom_toTopOf="@+id/bottom_navigation"
         app:layout_constraintStart_toStartOf="parent"

@@ -45,6 +45,8 @@
     <string name="verify_answer">Verify Answer</string>
     <string name="no_security_question_set">No security question has been set.</string>
     <string name="error_question_not_found">Error: Question not found.</string>
+    <string name="categories">Categories</string>
+    <string name="category_name">Category Name</string>
 
     <string-array name="security_questions">
         <item>-- Select a question --</item>
