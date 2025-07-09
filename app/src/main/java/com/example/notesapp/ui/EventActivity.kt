@@ -231,7 +231,7 @@ class EventActivity : AppCompatActivity() {
 
     // --- Fungsi untuk konfirmasi hapus event ---
     private fun showDeleteEventConfirmationDialog(event: Event) {
-        AlertDialog.Builder(this)
+        val alertDialog = AlertDialog.Builder(this)
             .setTitle("Hapus Event")
             .setMessage("Apakah Anda yakin ingin menghapus event '${event.title}'?")
             .setPositiveButton("Hapus") { _, _ ->
@@ -248,5 +248,8 @@ class EventActivity : AppCompatActivity() {
                 dialog.dismiss()
             }
             .show()
+
+        alertDialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(this, R.color.red_active))
+        alertDialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(this, R.color.gray))
     }
 }

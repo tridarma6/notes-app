@@ -734,13 +734,16 @@ class MainActivity : AppCompatActivity() {
         val notesUsingCategory = NoteDao.getNotesCountByCategory(db, category.id)
 
         if (notesUsingCategory > 0) {
-            AlertDialog.Builder(this)
+            val alertDialog = AlertDialog.Builder(this)
                 .setTitle("Tidak Dapat Menghapus Kategori")
                 .setMessage("Kategori '${category.name}' digunakan oleh $notesUsingCategory catatan. Harap pindahkan catatan ini ke kategori lain sebelum menghapus kategori ini.")
                 .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
                 .show()
+
+            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(this, R.color.red_active))
+            alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(this, R.color.gray))
         } else {
-            AlertDialog.Builder(this)
+            val alertDialog = AlertDialog.Builder(this)
                 .setTitle("Hapus Kategori")
                 .setMessage("Apakah Anda yakin ingin menghapus kategori '${category.name}'?")
                 .setPositiveButton("Hapus") { _, _ ->
@@ -758,6 +761,8 @@ class MainActivity : AppCompatActivity() {
                     dialog.dismiss()
                 }
                 .show()
+            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(this, R.color.red_active))
+            alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(this, R.color.gray))
         }
     }
 
@@ -765,7 +770,7 @@ class MainActivity : AppCompatActivity() {
     private fun showCategorySelectionDialog() {
         val options = arrayOf("View Categories (Filter Notes)", "Manage Categories (Add/Edit/Delete)")
 
-        AlertDialog.Builder(this)
+        val alertDialog = AlertDialog.Builder(this)
             .setTitle("Choose Category Action")
             .setItems(options) { dialog, which ->
                 when (which) {
@@ -796,6 +801,8 @@ class MainActivity : AppCompatActivity() {
                 dialog.dismiss()
             }
             .show()
+        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(this, R.color.green_active))
+        alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(this, R.color.gray))
     }
     // --- END PERUBAHAN UTAMA ---
 }
