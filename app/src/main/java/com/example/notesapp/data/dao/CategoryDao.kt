@@ -20,17 +20,6 @@ object CategoryDao {
         )
     """.trimIndent()
 
-    fun prepopulateCategories(db: SQLiteDatabase) {
-        val defaultCategories = listOf("Personal", "Work", "Idea", "Important")
-        defaultCategories.forEach {
-            val values = ContentValues().apply {
-                put(COLUMN_NAME, it)
-                put(COLUMN_COLOR, "#FFD700")
-            }
-            db.insert(TABLE_NAME, null, values)
-        }
-    }
-
     fun getAll(db: SQLiteDatabase): List<Category> {
         val categories = mutableListOf<Category>()
         val cursor = db.rawQuery("SELECT * FROM $TABLE_NAME ORDER BY $COLUMN_ID ASC", null)
@@ -73,6 +62,24 @@ object CategoryDao {
         }
         cursor.close()
         return name
+    }
+
+    // *** TAMBAHKAN METODE INI ***
+    fun getByName(db: SQLiteDatabase, name: String): Category? {
+        var category: Category? = null
+        val cursor = db.rawQuery(
+            "SELECT * FROM $TABLE_NAME WHERE $COLUMN_NAME = ?",
+            arrayOf(name)
+        )
+        if (cursor.moveToFirst()) {
+            category = Category(
+                id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_ID)),
+                name = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_NAME)),
+                colorHex = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_COLOR))
+            )
+        }
+        cursor.close()
+        return category
     }
 
     fun insert(db: SQLiteDatabase, category: Category): Boolean {

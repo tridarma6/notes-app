@@ -120,24 +120,28 @@ class AddEditNoteActivity : AppCompatActivity() {
 
     private fun setupCategorySpinner() {
         val db = NotesDatabaseHelper(this).readableDatabase
-        categoryMutableList = CategoryDao.getAll(db).toMutableList()
-        // Tambahkan opsi "Tidak Ada Kategori" di awal daftar (ID null atau 0)
-        // Pastikan ID -1 hanya untuk "Tambah Kategori"
-        categoryMutableList.add(0, Category(id = 0, name = "Uncategorized", colorHex = "#808080"))
+        categoryMutableList = CategoryDao.getAll(db).toMutableList() // Akan ambil "Uncategorized" dari DB
+
+        // *** HAPUS BARIS INI KARENA "Uncategorized" SUDAH DARI DB ***
+        // categoryMutableList.add(0, Category(id = 0, name = "Uncategorized", colorHex = "#808080"))
+
+        // Tambahkan "Tambah Kategori" di bagian akhir
         categoryMutableList.add(Category(id = -1, name = "Tambah Kategori", colorHex = "#000000"))
 
         val adapterSpinner = CategorySpinnerAdapter(this, categoryMutableList)
         binding.spinnerCategory.adapter = adapterSpinner
 
-        // Handle ketika kategori dipilih
         binding.spinnerCategory.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 val selectedItem = parent.getItemAtPosition(position)
                 if (selectedItem is Category && selectedItem.id == -1) {
                     showAddCategoryDialog()
                 }
+                // Tambahan: Jika Anda ingin kategori "Uncategorized" menjadi default saat memilihnya
+                // if (selectedItem is Category && selectedItem.name == "Uncategorized") {
+                //     // Lakukan sesuatu jika "Uncategorized" dipilih
+                // }
             }
-
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
     }

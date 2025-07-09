@@ -63,6 +63,12 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         dbHelper = NotesDatabaseHelper(this)
+
+        // --- Inisialisasi Dummy Data (PENTING: Pastikan ini berjalan sebelum memuat data dari DB) ---
+        insertDummyCategoriesIfEmpty() // Panggil ini lebih awal
+        insertDummyNotesIfEmpty() // Panggil ini lebih awal
+
+
         adapter = NotesAdapter(
             onItemClick = { note ->
                 val intent = Intent(this, AddEditNoteActivity::class.java).apply {
@@ -84,20 +90,45 @@ class MainActivity : AppCompatActivity() {
                     if (it.id == note.id) updatedNote else it
                 }
                 adapter.submitList(updatedList)
-
             }
         )
+
+        // --- Setup RecyclerView Kategori ---
         categoryList = CategoryDao.getAll(dbHelper.readableDatabase)
+        Log.d("MainActivity", "Jumlah kategori dimuat: ${categoryList.size}")
+        categoryList.forEach { category ->
+            Log.d("MainActivity", "Kategori: ${category.name}, ID: ${category.id}")
+        }
         categoryAdapter = CategoriesAdapter(categoryList) { selectedCategory ->
             Toast.makeText(this, "Kategori: ${selectedCategory.name}", Toast.LENGTH_SHORT).show()
-            // TODO: Filter note berdasarkan kategori jika dibutuhkan
+            // TODO: Filter catatan berdasarkan kategori di sini
+            // Misalnya:
+            val db = dbHelper.readableDatabase
+            val filteredNotes = NoteDao.getAll(db).filter { note ->
+                note.categoryId == selectedCategory.id && !note.isTrashed && !note.isHidden
+            }
+            adapter.displayMode = NoteDisplayMode.ALL // Atau buat display mode baru untuk kategori
+            adapter.submitList(filteredNotes)
+            // Setelah memfilter, mungkin Anda ingin kembali menampilkan recyclerRecentNotes
+            binding.recyclerCategory.visibility = View.GONE
+            binding.recyclerRecentNotes.visibility = View.VISIBLE
+            binding.recentNotesTitle.text = "Notes in ${selectedCategory.name}"
+            resetAllQuickButtons() // Reset tombol quick filter
         }
         binding.recyclerCategory.adapter = categoryAdapter
-        binding.recyclerCategory.layoutManager = LinearLayoutManager(this)
+        // Mengubah layout manager menjadi horizontal
+        binding.recyclerCategory.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
+        // Set visibilitas awal untuk recyclerCategory, mungkin sembunyikan dulu jika All Notes yang utama
+        binding.recyclerCategory.visibility = View.GONE // Default sembunyikan
 
-        // Setup RecyclerView
+
+        // Setup RecyclerView Notes
         binding.recyclerRecentNotes.layoutManager = GridLayoutManager(this, 2)
         binding.recyclerRecentNotes.adapter = adapter
+        // Pastikan ini terlihat di awal
+        binding.recyclerRecentNotes.visibility = View.VISIBLE
+
+
         val swipeCallback = object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
             override fun onMove(
                 recyclerView: RecyclerView,
@@ -212,10 +243,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnTrash.setOnClickListener {
-            val db = dbHelper.readableDatabase
-            val trashedNotes = NoteDao.getAll(db).filter { it.isTrashed }
+            loadTrashedNotes() // Menggunakan metode yang sudah ada
             adapter.displayMode = NoteDisplayMode.TRASH
-            adapter.submitList(trashedNotes)
             binding.recentNotesTitle.text = "Trashed Notes"
 
             resetAllQuickButtons()
@@ -228,19 +257,24 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnCategory.setOnClickListener {
-            binding.recyclerRecentNotes.visibility = View.GONE
-            binding.recyclerCategory.visibility = View.VISIBLE
+            binding.recyclerRecentNotes.visibility = View.GONE // Sembunyikan daftar catatan
+            binding.recyclerCategory.visibility = View.VISIBLE // Tampilkan daftar kategori
+
             val db = dbHelper.readableDatabase
-            val categories = CategoryDao.getAll(db)
-            adapter.displayMode = NoteDisplayMode.CATEGORY
+            // Pastikan categoryAdapter diperbarui jika ada kategori baru
+            categoryList = CategoryDao.getAll(db)
+            (binding.recyclerCategory.adapter as CategoriesAdapter).updateCategories(categoryList)
+
+
+            adapter.displayMode = NoteDisplayMode.CATEGORY // Sesuaikan ini jika perlu
             resetAllQuickButtons()
             setQuickButtonState(binding.btnCategory, true, R.color.brown_active)
             binding.recentNotesTitle.text = getString(R.string.categories)
             isViewingTrash = false
             isViewingFavorite = false
             isViewingHidden = false
-
         }
+
         binding.btnFavorite.setOnClickListener {
             val db = dbHelper.readableDatabase
             val favoriteNotes = NoteDao.getAll(db).filter { it.isFavorite && !it.isTrashed && !it.isHidden}
@@ -249,7 +283,7 @@ class MainActivity : AppCompatActivity() {
             binding.recentNotesTitle.text = "Favorite Notes"
             resetAllQuickButtons()
             setQuickButtonState(binding.btnFavorite, true, R.color.yellow_active)
-            isViewingTrash = false
+            isViewingTrash = true
             isViewingFavorite = true
             isViewingHidden = false
             binding.recyclerCategory.visibility = View.GONE
@@ -262,8 +296,6 @@ class MainActivity : AppCompatActivity() {
             binding.recyclerCategory.visibility = View.GONE
             binding.recyclerRecentNotes.visibility = View.VISIBLE
         }
-
-
 
         binding.btnAllNotes.setOnClickListener {
             loadNotes() // tampilkan semua yang tidak di-trash
@@ -278,14 +310,17 @@ class MainActivity : AppCompatActivity() {
             isViewingTrash = false
             isViewingFavorite = false
             isViewingHidden = false
-            binding.recyclerCategory.visibility = View.GONE
-            binding.recyclerRecentNotes.visibility = View.VISIBLE
+            binding.recyclerCategory.visibility = View.GONE // Pastikan ini disembunyikan
+            binding.recyclerRecentNotes.visibility = View.VISIBLE // Pastikan ini ditampilkan
         }
+
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.menu_notes -> {
-                    // Tampilkan Home (All Notes)
+                    // Tampilkan Home (All Notes) dan sembunyikan kategori
                     loadNotes()
+                    binding.recyclerCategory.visibility = View.GONE
+                    binding.recyclerRecentNotes.visibility = View.VISIBLE
                     true
                 }
                 R.id.menu_setting -> {
@@ -298,11 +333,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-//
-        insertDummyNotesIfEmpty()
-        insertDummyCategoriesIfEmpty()
-
-
+        // --- Panggil loadNotes() di akhir onCreate untuk menampilkan catatan awal ---
         loadNotes()
     }
 
@@ -310,13 +341,17 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (!isViewingHidden && !isViewingTrash && !isViewingFavorite) {
-            loadNotes()
+            loadNotes() // Memuat catatan reguler saat kembali dari AddEditNoteActivity
         }
+        // Perbarui daftar kategori juga setiap kali onResume dipanggil
+        val db = dbHelper.readableDatabase
+        categoryList = CategoryDao.getAll(db)
+        (binding.recyclerCategory.adapter as CategoriesAdapter).updateCategories(categoryList)
     }
 
     private fun loadNotes() {
         val db = dbHelper.readableDatabase
-        val notes = NoteDao.getAll(db).filter { !it.isTrashed and !it.isHidden } // Hanya tampilkan yang tidak dihapus
+        val notes = NoteDao.getAll(db).filter { !it.isTrashed && !it.isHidden } // Hanya tampilkan yang tidak dihapus atau disembunyikan
         adapter.displayMode = NoteDisplayMode.ALL
         adapter.submitList(notes)
     }
@@ -337,16 +372,16 @@ class MainActivity : AppCompatActivity() {
     private fun hideNote(note: Note) {
         val updatedNote = note.copy(isHidden = true)
         NoteDao.update(dbHelper.writableDatabase, updatedNote)
-        val updatedList = adapter.currentList.filter { it.id != note.id }
-        adapter.submitList(updatedList)
+        // Refresh tampilan saat ini, tidak perlu filter manual lagi
+        refreshCurrentView()
         Toast.makeText(this, "Catatan disembunyikan", Toast.LENGTH_SHORT).show()
     }
 
     private fun unhideNote(note: Note) {
         val updatedNote = note.copy(isHidden = false)
         NoteDao.update(dbHelper.writableDatabase, updatedNote)
-        val updatedList = adapter.currentList.filter { it.id != note.id }
-        adapter.submitList(updatedList)
+        // Refresh tampilan saat ini, tidak perlu filter manual lagi
+        refreshCurrentView()
         Toast.makeText(this, "Catatan ditampilkan", Toast.LENGTH_SHORT).show()
     }
 
@@ -367,23 +402,29 @@ class MainActivity : AppCompatActivity() {
         val db = dbHelper.writableDatabase
         val notes = NoteDao.getAll(db)
         if (notes.isEmpty()) {
+            // Pastikan ID kategori ada di database.
+            // Anda mungkin perlu mendapatkan ID kategori dari database setelah dummy categories disisipkan.
+            val uncategorizedId = CategoryDao.getByName(db, "Uncategorized")?.id ?: 0 // Ambil ID Uncategorized
+            val foodId = CategoryDao.getByName(db, "Food")?.id ?: 0
+            val billId = CategoryDao.getByName(db, "Bill")?.id ?: 0
+
             val dummyNotes = listOf(
                 Note(
                     title = "Getting Started",
                     content = "Selamat datang di aplikasi NotesApp.",
-                    categoryId = 1,
+                    categoryId = uncategorizedId, // Gunakan ID yang benar
                     isFavorite = true
                 ),
                 Note(
                     title = "UX Design",
                     content = "Tips dan trik untuk desain UX.",
-                    categoryId = 2,
+                    categoryId = foodId, // Gunakan ID yang benar
                     isHidden = true
                 ),
                 Note(
                     title = "Important",
                     content = "Catatan ini penting!",
-                    categoryId = 3,
+                    categoryId = billId, // Gunakan ID yang benar
                     isTrashed = true
                 )
             )
@@ -395,28 +436,17 @@ class MainActivity : AppCompatActivity() {
         val categories = CategoryDao.getAll(db)
         if (categories.isEmpty()){
             val dummyCategory = listOf(
-                Category(
-                    name = "Food",
-                    colorHex = "#FF6F61"
-                ),
-                Category(
-                    name = "Bill",
-                    colorHex = "#FFD700"
-                ),
-                Category(
-                    name = "Work",
-                    colorHex = "#4B9CD3"
-                ),
-                Category(
-                    name = "Idea",
-                    colorHex = "#9C27B0"
-                ),
-                Category(
-                    name = "Health",
-                    colorHex = "#4CAF50"
-                )
+                Category(name = "Uncategorized", colorHex = "#9E9E9E"), // Akan disimpan ke DB dengan ID otomatis
+                Category(name = "Food", colorHex = "#FF6F61"),
+                Category(name = "Bill", colorHex = "#FFD700"),
+                Category(name = "Work", colorHex = "#4B9CD3"),
+                Category(name = "Idea", colorHex = "#9C27B0"),
+                Category(name = "Health", colorHex = "#4CAF50")
             )
             dummyCategory.forEach { CategoryDao.insert(db, it) }
+            Log.d("MainActivity", "Dummy categories inserted, including Uncategorized.")
+        } else {
+            Log.d("MainActivity", "Categories table is not empty, skipping dummy data insertion.")
         }
     }
 

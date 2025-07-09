@@ -1,4 +1,5 @@
 import android.graphics.Color
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,7 +10,7 @@ import com.example.notesapp.R
 import com.example.notesapp.data.model.Category
 
 class CategoriesAdapter(
-    private val categories: List<Category>,
+    private var categories: List<Category>,
     private val onItemClick: (Category) -> Unit
 ) : RecyclerView.Adapter<CategoriesAdapter.CategoryViewHolder>() {
 
@@ -38,6 +39,16 @@ class CategoriesAdapter(
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_category, parent, false)
         return CategoryViewHolder(view)
+    }
+
+    // Di dalam CategoriesAdapter.updateCategories()
+    fun updateCategories(newCategories: List<Category>) {
+        this.categories = newCategories
+        Log.d("CategoriesAdapter", "Adapter diperbarui dengan ${newCategories.size} kategori.")
+        newCategories.forEach { category ->
+            Log.d("CategoriesAdapter", "Kategori adapter: ${category.name}")
+        }
+        notifyDataSetChanged()
     }
 
     override fun onBindViewHolder(holder: CategoryViewHolder, position: Int) {
