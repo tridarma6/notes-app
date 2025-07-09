@@ -4,8 +4,8 @@ import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.TextView
 import android.widget.AdapterView
-import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -17,11 +17,11 @@ import com.example.notesapp.data.model.Category
 import com.example.notesapp.data.model.Note
 import com.example.notesapp.databinding.ActivityAddEditNoteBinding
 import java.util.*
-import android.text.Editable
-import android.text.TextWatcher
-import android.graphics.Color
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.notesapp.data.database.NotesDatabaseHelper
+import com.example.notesapp.ui.adapter.ColorPickerAdapter
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 
@@ -32,6 +32,7 @@ class AddEditNoteActivity : AppCompatActivity() {
     private var editingNoteId: String? = null
     private lateinit var categoryMutableList: MutableList<Category>
     private var existingNote: Note? = null // *** TAMBAHKAN VARIABEL INI ***
+    private var selectedCategoryColor: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.d("EntertoEdit", "Masuk ke edit")
@@ -156,40 +157,46 @@ class AddEditNoteActivity : AppCompatActivity() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_category, null)
         val textInputLayoutName = dialogView.findViewById<TextInputLayout>(R.id.textInputLayoutCategoryName)
         val editName = dialogView.findViewById<TextInputEditText>(R.id.editCategoryName)
-        val textInputLayoutColor = dialogView.findViewById<TextInputLayout>(R.id.textInputLayoutCategoryColor)
-        val editColor = dialogView.findViewById<TextInputEditText>(R.id.editCategoryColor)
-        val colorPreview = dialogView.findViewById<View>(R.id.colorPreview)
+        val colorPickerRecyclerView = dialogView.findViewById<RecyclerView>(R.id.colorPickerRecyclerView)
+        val colorSelectionWarning = dialogView.findViewById<TextView>(R.id.colorSelectionWarning) // Referensi ke warning text
 
-        editColor.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        // Daftar warna yang akan ditampilkan
+        val predefinedColors = listOf(
+            "#F44336", // Red
+            "#E91E63", // Pink
+            "#9C27B0", // Purple
+            "#673AB7", // Deep Purple
+            "#3F51B5", // Indigo
+            "#2196F3", // Blue
+            "#03A9F4", // Light Blue
+            "#00BCD4", // Cyan
+            "#009688", // Teal
+            "#4CAF50", // Green
+            "#8BC34A", // Light Green
+            "#CDDC39", // Lime
+            "#FFEB3B", // Yellow
+            "#FFC107", // Amber
+            "#FF9800", // Orange
+            "#FF5722", // Deep Orange
+            "#795548", // Brown
+            "#9E9E9E", // Grey
+            "#607D8B"  // Blue Grey
+        )
 
-            override fun afterTextChanged(s: Editable?) {
-                val colorString = s.toString().trim()
-                if (colorString.matches(Regex("^#[0-9A-Fa-f]{6}$"))) {
-                    try {
-                        val colorInt = Color.parseColor(colorString)
-                        colorPreview.setBackgroundColor(colorInt)
-                        colorPreview.visibility = View.VISIBLE
-                        textInputLayoutColor.error = null
-                    } catch (e: IllegalArgumentException) {
-                        colorPreview.visibility = View.GONE
-                        textInputLayoutColor.error = "Format warna HEX tidak valid"
-                    }
-                } else {
-                    colorPreview.visibility = View.GONE
-                    if (colorString.isNotEmpty() && !colorString.startsWith("#")) {
-                        textInputLayoutColor.error = "Harus dimulai dengan #"
-                    } else if (colorString.length > 1 && !colorString.matches(Regex("^#[0-9A-Fa-f]*$"))) {
-                        textInputLayoutColor.error = "Hanya huruf A-F dan angka 0-9"
-                    } else if (colorString.length == 7 && !colorString.matches(Regex("^#[0-9A-Fa-f]{6}$"))) {
-                        textInputLayoutColor.error = "Warna harus 6 karakter HEX setelah #"
-                    } else {
-                        textInputLayoutColor.error = null
-                    }
-                }
-            }
-        })
+        val colorAdapter = ColorPickerAdapter(predefinedColors) { colorHex ->
+            selectedCategoryColor = colorHex // Simpan warna yang dipilih
+            colorSelectionWarning.visibility = View.GONE // Sembunyikan warning jika warna dipilih
+        }
+
+        colorPickerRecyclerView.layoutManager =
+            LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        colorPickerRecyclerView.adapter = colorAdapter
+
+        // Default: Pilih warna pertama sebagai default jika user tidak memilih
+        if (selectedCategoryColor == null && predefinedColors.isNotEmpty()) {
+            selectedCategoryColor = predefinedColors[0]
+            colorAdapter.setSelectedColor(predefinedColors[0]) // Atur centang pada default
+        }
 
         val alertDialog = AlertDialog.Builder(this)
             .setView(dialogView)
@@ -205,7 +212,7 @@ class AddEditNoteActivity : AppCompatActivity() {
         val positiveButton = alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)
         positiveButton.setOnClickListener {
             val name = editName.text.toString().trim()
-            val colorHex = editColor.text.toString().trim()
+            val colorHex = selectedCategoryColor // *** Ambil warna dari variabel yang dipilih ***
 
             var isValid = true
 
@@ -216,15 +223,17 @@ class AddEditNoteActivity : AppCompatActivity() {
                 textInputLayoutName.error = null
             }
 
-            if (!colorHex.matches(Regex("^#[0-9A-Fa-f]{6}$"))) {
-                textInputLayoutColor.error = "Warna harus dalam format HEX (#RRGGBB)"
+            // Validasi: Pastikan warna sudah dipilih
+            if (colorHex.isNullOrBlank()) {
+                colorSelectionWarning.visibility = View.VISIBLE
                 isValid = false
             } else {
-                textInputLayoutColor.error = null
+                colorSelectionWarning.visibility = View.GONE
             }
 
             if (isValid) {
-                val category = Category(name = name, colorHex = colorHex)
+                // Pastikan colorHex tidak null saat membuat Category
+                val category = Category(name = name, colorHex = colorHex!!)
                 val db = NotesDatabaseHelper(this).writableDatabase
                 CategoryDao.insert(db, category)
                 setupCategorySpinner()
