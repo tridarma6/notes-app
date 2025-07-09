@@ -305,6 +305,11 @@ class MainActivity : AppCompatActivity() {
                     resetToAllNotesView()
                     true
                 }
+                R.id.menu_event -> {
+                    val intent = Intent(this, EventActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
                 R.id.menu_setting -> {
                     val intent = Intent(this, SettingsActivity::class.java)
                     startActivity(intent)

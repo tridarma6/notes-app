@@ -55,6 +55,11 @@ class SettingsActivity : AppCompatActivity() {
                     finish()
                     true
                 }
+                R.id.menu_event -> {
+                    val intent = Intent(this, EventActivity::class.java)
+                    startActivity(intent)
+                    true
+                }
                 R.id.menu_setting -> {
                     // Sudah di halaman settings
                     true
