@@ -12,7 +12,7 @@ import com.example.notesapp.data.model.Note
 import com.example.notesapp.databinding.ItemNoteBinding
 
 enum class NoteDisplayMode {
-    ALL, TRASH, FAVORITE, HIDDEN, CATEGORY
+    ALL, TRASH, FAVORITE, HIDDEN, CATEGORY, MANAGE_CATEGORIES
 }
 class NotesAdapter(
     private val onItemClick: (Note) -> Unit,

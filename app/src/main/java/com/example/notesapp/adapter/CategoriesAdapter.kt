@@ -37,11 +37,11 @@ class CategoriesAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CategoryViewHolder {
         val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_category, parent, false)
+            .inflate(R.layout.item_category, parent, false) // <-- PASTIKAN INI item_category
         return CategoryViewHolder(view)
     }
 
-    // Di dalam CategoriesAdapter.updateCategories()
+
     fun updateCategories(newCategories: List<Category>) {
         this.categories = newCategories
         Log.d("CategoriesAdapter", "Adapter diperbarui dengan ${newCategories.size} kategori.")

@@ -1,6 +1,7 @@
 package com.example.notesapp.data.dao
 
 import android.content.ContentValues
+import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import com.example.notesapp.data.database.NotesDatabaseHelper
 import com.example.notesapp.data.model.Category
@@ -90,8 +91,45 @@ object CategoryDao {
         return db.insert(TABLE_NAME, null, values) != -1L
     }
 
-    fun deleteAll(db: SQLiteDatabase){
-        db.delete(TABLE_NAME, null, null) // menghapus semua baris di tabel
+    fun update(db: SQLiteDatabase, category: Category): Int {
+        val values = ContentValues().apply {
+            put(COLUMN_NAME, category.name)
+            put(COLUMN_COLOR, category.colorHex)
+        }
+        return db.update(TABLE_NAME, values, "$COLUMN_ID = ?", arrayOf(category.id.toString()))
+    }
+
+    fun delete(db: SQLiteDatabase, categoryId: Int): Int {
+        return db.delete(TABLE_NAME, "$COLUMN_ID = ?", arrayOf(categoryId.toString()))
+    }
+
+    fun getCategoryById(db: SQLiteDatabase, categoryId: Int): Category? {
+        // Tangani kasus "Uncategorized" yang ID-nya 0
+        if (categoryId == 0) {
+            return Category(id = 0, name = "Uncategorized", colorHex = "#808080")
+        }
+
+        val cursor: Cursor = db.query(
+            TABLE_NAME,
+            arrayOf(COLUMN_ID, COLUMN_NAME, COLUMN_COLOR),
+            "$COLUMN_ID = ?",
+            arrayOf(categoryId.toString()),
+            null,
+            null,
+            null
+        )
+
+        var category: Category? = null
+        with(cursor) {
+            if (moveToFirst()) {
+                val id = getInt(getColumnIndexOrThrow(COLUMN_ID))
+                val name = getString(getColumnIndexOrThrow(COLUMN_NAME))
+                val colorHex = getString(getColumnIndexOrThrow(COLUMN_COLOR))
+                category = Category(id, name, colorHex)
+            }
+        }
+        cursor.close()
+        return category
     }
 
 }

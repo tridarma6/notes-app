@@ -15,6 +15,7 @@
         android:background="@color/card_bg">
 
         <TextView
+            android:id="@+id/dialogTitleTextView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Tambah Kategori Baru"

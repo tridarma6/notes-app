@@ -116,4 +116,23 @@ object NoteDao {
     fun deletePermanent(db: SQLiteDatabase, noteId: String) {
         db.delete(TABLE_NAME, "$COLUMN_ID = ?", arrayOf(noteId))
     }
+
+    fun getNotesCountByCategory(db: SQLiteDatabase, categoryId: Int): Int {
+        val countQuery = "SELECT COUNT(*) FROM ${TABLE_NAME} WHERE ${COLUMN_CATEGORY_ID} = ?"
+        val cursor = db.rawQuery(countQuery, arrayOf(categoryId.toString()))
+        var count = 0
+        with(cursor) {
+            if (moveToFirst()) {
+                count = getInt(0)
+            }
+        }
+        cursor.close()
+        return count
+    }
+    fun updateCategoryToNull(db: SQLiteDatabase, oldCategoryId: Int): Int {
+        val values = ContentValues().apply {
+            put(COLUMN_CATEGORY_ID, 0L) // Ubah ke 0L (ID "Uncategorized") atau null jika skema DB mendukungnya
+        }
+        return db.update(TABLE_NAME, values, "$COLUMN_CATEGORY_ID = ?", arrayOf(oldCategoryId.toString()))
+    }
 }
