@@ -179,12 +179,19 @@ class MainActivity : AppCompatActivity() {
                 val note = notesAdapter.currentList[position]
 
                 var swipeFlags = 0
+                // Swipe ke kiri: Sembunyikan catatan (jika tidak tersembunyi dan tidak di tempat sampah)
                 if (!note.isHidden && !note.isTrashed) {
-                    swipeFlags = swipeFlags or ItemTouchHelper.LEFT // Hide note
+                    swipeFlags = swipeFlags or ItemTouchHelper.LEFT
                 }
+                // Swipe ke kanan: Tampilkan catatan (jika tersembunyi)
                 if (isViewingHidden && note.isHidden) {
-                    swipeFlags = swipeFlags or ItemTouchHelper.RIGHT // Unhide note
+                    swipeFlags = swipeFlags or ItemTouchHelper.RIGHT
                 }
+                // --- PERUBAHAN UTAMA: Tambahkan swipe ke kanan untuk mengembalikan dari trash ---
+                if (isViewingTrash && note.isTrashed) {
+                    swipeFlags = swipeFlags or ItemTouchHelper.RIGHT // Restore note from trash
+                }
+                // --- END PERUBAHAN UTAMA ---
                 return makeMovementFlags(0, swipeFlags)
             }
 
@@ -197,9 +204,27 @@ class MainActivity : AppCompatActivity() {
                 val note = notesAdapter.currentList[position]
 
                 if (direction == ItemTouchHelper.LEFT) {
-                    hideNote(note)
+                    // Logic untuk hide note
+                    if (!note.isHidden && !note.isTrashed) { // Pastikan hanya berlaku untuk catatan non-hidden/non-trashed
+                        hideNote(note)
+                    } else {
+                        // Jika bukan kondisi untuk hide, kembalikan item ke posisi semula
+                        notesAdapter.notifyItemChanged(position)
+                    }
                 } else if (direction == ItemTouchHelper.RIGHT) {
-                    unhideNote(note)
+                    // Logic untuk unhide note
+                    if (isViewingHidden && note.isHidden) {
+                        unhideNote(note)
+                    }
+                    // --- PERUBAHAN UTAMA: Panggil restoreNote jika sedang di trash ---
+                    else if (isViewingTrash && note.isTrashed) {
+                        restoreNote(note)
+                    }
+                    // --- END PERUBAHAN UTAMA ---
+                    else {
+                        // Jika bukan kondisi untuk unhide atau restore, kembalikan item
+                        notesAdapter.notifyItemChanged(position)
+                    }
                 }
             }
 
@@ -224,11 +249,12 @@ class MainActivity : AppCompatActivity() {
                 val iconSize = 48
                 val textYOffset = (itemView.height / 2f) + (textPaint.textSize / 3)
 
-                if (dX < 0 && !note.isHidden && !note.isTrashed) { // Swipe ke kiri: Hide note
+                // Swipe ke kiri: Hide note
+                if (dX < 0 && !note.isHidden && !note.isTrashed) {
                     val paint = Paint().apply { color = ContextCompat.getColor(context, R.color.blue_active) }
                     c.drawRect(itemView.right + dX, itemView.top.toFloat(), itemView.right.toFloat(), itemView.bottom.toFloat(), paint)
 
-                    val icon = ContextCompat.getDrawable(context, R.drawable.ic_hidden)
+                    val icon = ContextCompat.getDrawable(context, R.drawable.ic_hidden) // Pastikan Anda memiliki ikon ini
                     icon?.let {
                         val iconLeft = itemView.right - iconSize - 32
                         val iconTop = itemView.top + (itemView.height - iconSize) / 2
@@ -236,11 +262,13 @@ class MainActivity : AppCompatActivity() {
                         it.draw(c)
                     }
                     c.drawText("Hide note?", itemView.right - 250f, textYOffset, textPaint)
-                } else if (dX > 0 && isViewingHidden && note.isHidden) { // Swipe ke kanan: Unhide note
-                    val paint = Paint().apply { color = ContextCompat.getColor(context, R.color.soft_green) }
+                }
+                // Swipe ke kanan: Unhide note (jika sedang melihat hidden notes)
+                else if (dX > 0 && isViewingHidden && note.isHidden) {
+                    val paint = Paint().apply { color = ContextCompat.getColor(context, R.color.soft_green) } // Gunakan warna hijau
                     c.drawRect(itemView.left.toFloat(), itemView.top.toFloat(), itemView.left + dX, itemView.bottom.toFloat(), paint)
 
-                    val icon = ContextCompat.getDrawable(context, R.drawable.ic_hidden)
+                    val icon = ContextCompat.getDrawable(context, R.drawable.ic_eye) // Anda mungkin ingin ikon "terlihat"
                     icon?.let {
                         val iconLeft = itemView.left + 32
                         val iconTop = itemView.top + (itemView.height - iconSize) / 2
@@ -249,6 +277,21 @@ class MainActivity : AppCompatActivity() {
                     }
                     c.drawText("Unhide note?", itemView.left + 100f, textYOffset, textPaint)
                 }
+                // --- PERUBAHAN UTAMA: Swipe ke kanan untuk Restore note (jika sedang melihat trash notes) ---
+                else if (dX > 0 && isViewingTrash && note.isTrashed) {
+                    val paint = Paint().apply { color = ContextCompat.getColor(context, R.color.soft_blue) } // Warna biru untuk restore
+                    c.drawRect(itemView.left.toFloat(), itemView.top.toFloat(), itemView.left + dX, itemView.bottom.toFloat(), paint)
+
+                    val icon = ContextCompat.getDrawable(context, R.drawable.ic_restore) // Anda butuh ikon restore
+                    icon?.let {
+                        val iconLeft = itemView.left + 32
+                        val iconTop = itemView.top + (itemView.height - iconSize) / 2
+                        it.setBounds(iconLeft, iconTop, iconLeft + iconSize, iconTop + iconSize)
+                        it.draw(c)
+                    }
+                    c.drawText("Restore note?", itemView.left + 100f, textYOffset, textPaint)
+                }
+                // --- END PERUBAHAN UTAMA ---
                 super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
             }
         }
@@ -395,6 +438,9 @@ class MainActivity : AppCompatActivity() {
                 binding.recyclerRecentNotes.visibility = View.VISIBLE
                 selectedCategoryId = null
                 notesAdapter.displayMode = NoteDisplayMode.ALL // Pastikan displayMode diatur
+                if (binding.recyclerRecentNotes.adapter != notesAdapter) { // Periksa dan set adapter notes
+                    binding.recyclerRecentNotes.adapter = notesAdapter
+                }
             }
             NoteDisplayMode.TRASH -> {
                 baseNotes = NoteDao.getAll(db).filter { it.isTrashed }
@@ -402,6 +448,9 @@ class MainActivity : AppCompatActivity() {
                 binding.recyclerRecentNotes.visibility = View.VISIBLE
                 selectedCategoryId = null
                 notesAdapter.displayMode = NoteDisplayMode.TRASH // Pastikan displayMode diatur
+                if (binding.recyclerRecentNotes.adapter != notesAdapter) { // Periksa dan set adapter notes
+                    binding.recyclerRecentNotes.adapter = notesAdapter
+                }
             }
             NoteDisplayMode.FAVORITE -> {
                 baseNotes = NoteDao.getAll(db).filter { it.isFavorite && !it.isTrashed && !it.isHidden }
@@ -409,6 +458,9 @@ class MainActivity : AppCompatActivity() {
                 binding.recyclerRecentNotes.visibility = View.VISIBLE
                 selectedCategoryId = null
                 notesAdapter.displayMode = NoteDisplayMode.FAVORITE // Pastikan displayMode diatur
+                if (binding.recyclerRecentNotes.adapter != notesAdapter) { // Periksa dan set adapter notes
+                    binding.recyclerRecentNotes.adapter = notesAdapter
+                }
             }
             NoteDisplayMode.HIDDEN -> {
                 baseNotes = NoteDao.getAll(db).filter { it.isHidden }
@@ -416,6 +468,9 @@ class MainActivity : AppCompatActivity() {
                 binding.recyclerRecentNotes.visibility = View.VISIBLE
                 selectedCategoryId = null
                 notesAdapter.displayMode = NoteDisplayMode.HIDDEN // Pastikan displayMode diatur
+                if (binding.recyclerRecentNotes.adapter != notesAdapter) { // Periksa dan set adapter notes
+                    binding.recyclerRecentNotes.adapter = notesAdapter
+                }
             }
             NoteDisplayMode.CATEGORY -> {
                 // Jika selectedCategoryId masih null, berarti kita baru klik btnCategory dan ingin menampilkan daftar filter
@@ -423,7 +478,9 @@ class MainActivity : AppCompatActivity() {
                     currentTitle = getString(R.string.categories)
                     binding.recyclerCategory.visibility = View.VISIBLE
                     // Set adapter ke categoryFilterAdapter
-                    binding.recyclerCategory.adapter = categoryFilterAdapter
+                    if (binding.recyclerCategory.adapter != categoryFilterAdapter) { // Periksa dan set adapter filter
+                        binding.recyclerCategory.adapter = categoryFilterAdapter
+                    }
                     val categoriesForFilter = CategoryDao.getAll(db)
                     categoryFilterAdapter.updateCategories(categoriesForFilter)
                     notesAdapter.submitList(emptyList()) // Kosongkan daftar catatan
@@ -437,13 +494,18 @@ class MainActivity : AppCompatActivity() {
                     currentTitle = "Notes in ${selectedCategoryName ?: "Category"}"
                     binding.recyclerRecentNotes.visibility = View.VISIBLE
                     notesAdapter.displayMode = NoteDisplayMode.CATEGORY // Pastikan displayMode diatur
+                    if (binding.recyclerRecentNotes.adapter != notesAdapter) { // Periksa dan set adapter notes
+                        binding.recyclerRecentNotes.adapter = notesAdapter
+                    }
                 }
             }
             NoteDisplayMode.MANAGE_CATEGORIES -> {
                 currentTitle = "Manage Categories"
                 binding.recyclerCategory.visibility = View.VISIBLE
                 // Set adapter ke categoryManageAdapter
-                binding.recyclerCategory.adapter = categoryManageAdapter
+                if (binding.recyclerCategory.adapter != categoryManageAdapter) { // Periksa dan set adapter manage
+                    binding.recyclerCategory.adapter = categoryManageAdapter
+                }
                 loadCategoriesForManage() // Memuat dan memperbarui data untuk manajemen
                 notesAdapter.submitList(emptyList()) // Kosongkan daftar catatan
                 binding.recentNotesTitle.text = currentTitle
@@ -487,6 +549,15 @@ class MainActivity : AppCompatActivity() {
         refreshCurrentView()
         Toast.makeText(this, "Catatan ditampilkan", Toast.LENGTH_SHORT).show()
     }
+
+    // --- PERUBAHAN UTAMA: Fungsi baru untuk mengembalikan catatan dari trash ---
+    private fun restoreNote(note: Note) {
+        val updatedNote = note.copy(isTrashed = false)
+        NoteDao.update(dbHelper.writableDatabase, updatedNote)
+        refreshCurrentView()
+        Toast.makeText(this, "Catatan berhasil dipulihkan", Toast.LENGTH_SHORT).show()
+    }
+    // --- END PERUBAHAN UTAMA ---
 
     private fun resetToAllNotesView() {
         currentDisplayMode = NoteDisplayMode.ALL
@@ -734,16 +805,13 @@ class MainActivity : AppCompatActivity() {
         val notesUsingCategory = NoteDao.getNotesCountByCategory(db, category.id)
 
         if (notesUsingCategory > 0) {
-            val alertDialog = AlertDialog.Builder(this)
+            AlertDialog.Builder(this)
                 .setTitle("Tidak Dapat Menghapus Kategori")
                 .setMessage("Kategori '${category.name}' digunakan oleh $notesUsingCategory catatan. Harap pindahkan catatan ini ke kategori lain sebelum menghapus kategori ini.")
                 .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
                 .show()
-
-            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(this, R.color.red_active))
-            alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(this, R.color.gray))
         } else {
-            val alertDialog = AlertDialog.Builder(this)
+            AlertDialog.Builder(this)
                 .setTitle("Hapus Kategori")
                 .setMessage("Apakah Anda yakin ingin menghapus kategori '${category.name}'?")
                 .setPositiveButton("Hapus") { _, _ ->
@@ -761,16 +829,13 @@ class MainActivity : AppCompatActivity() {
                     dialog.dismiss()
                 }
                 .show()
-            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(this, R.color.red_active))
-            alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(this, R.color.gray))
         }
     }
 
-    // --- START PERUBAHAN UTAMA: Fungsi baru untuk menampilkan dialog pilihan kategori ---
     private fun showCategorySelectionDialog() {
         val options = arrayOf("View Categories (Filter Notes)", "Manage Categories (Add/Edit/Delete)")
 
-        val alertDialog = AlertDialog.Builder(this)
+        AlertDialog.Builder(this)
             .setTitle("Choose Category Action")
             .setItems(options) { dialog, which ->
                 when (which) {
@@ -801,8 +866,5 @@ class MainActivity : AppCompatActivity() {
                 dialog.dismiss()
             }
             .show()
-        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(this, R.color.green_active))
-        alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(this, R.color.gray))
     }
-    // --- END PERUBAHAN UTAMA ---
 }
