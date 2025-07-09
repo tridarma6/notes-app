@@ -27,4 +27,5 @@
     <color name="green_primary">#34C759</color>
     <color name="gray_spinner">#AAAAAA</color>
     <color name="fab_orange">#FFB74D</color>
+    <color name="purple_700">#EDEDED</color>
 </resources>
