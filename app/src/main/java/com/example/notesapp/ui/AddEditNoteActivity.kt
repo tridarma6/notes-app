@@ -19,7 +19,7 @@ import com.example.notesapp.databinding.ActivityAddEditNoteBinding
 import java.util.*
 import android.text.Editable
 import android.text.TextWatcher
-import android.graphics.Color // Import ini untuk Color.parseColor
+import android.graphics.Color
 import androidx.core.content.ContextCompat
 import com.example.notesapp.data.database.NotesDatabaseHelper
 import com.google.android.material.textfield.TextInputEditText
@@ -30,8 +30,8 @@ class AddEditNoteActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddEditNoteBinding
     private lateinit var dbHelper: NotesDatabaseHelper
     private var editingNoteId: String? = null
-    // Mengubah ini menjadi var agar bisa diinisialisasi ulang atau diisi nanti
     private lateinit var categoryMutableList: MutableList<Category>
+    private var existingNote: Note? = null // *** TAMBAHKAN VARIABEL INI ***
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.d("EntertoEdit", "Masuk ke edit")
@@ -40,80 +40,87 @@ class AddEditNoteActivity : AppCompatActivity() {
         setContentView(binding.root)
         dbHelper = NotesDatabaseHelper(this)
 
-        // Panggil setupCategorySpinner() *sebelum* mencoba mengakses categoryMutableList
         setupCategorySpinner()
 
         editingNoteId = intent.getStringExtra("EXTRA_NOTE_ID")
         Log.d("AddEditNoteActivity", "onCreate: editingNoteId received = $editingNoteId")
 
-        // Cek apakah sedang edit
         if (editingNoteId != null) {
+            // Ambil catatan yang sudah ada dan simpan di existingNote
             val note = NoteDao.getById(dbHelper.readableDatabase, editingNoteId!!)
             note?.let {
+                existingNote = it // *** SIMPAN CATATAN YANG ADA DI existingNote ***
                 binding.editTitle.setText(it.title)
                 binding.editContent.setText(it.content)
 
-                // Set posisi spinner sesuai categoryId
                 if (it.categoryId != null) {
                     val categoryPosition = categoryMutableList.indexOfFirst { category -> category.id == it.categoryId }
                     if (categoryPosition != -1) {
                         binding.spinnerCategory.setSelection(categoryPosition)
                     } else {
-                        // Jika kategori tidak ditemukan, default ke kategori pertama (biasanya "Tidak ada Kategori" atau sejenisnya)
                         binding.spinnerCategory.setSelection(0)
                     }
                 } else {
-                    // Jika categoryId null, set ke posisi default (misalnya "Tidak ada Kategori")
                     binding.spinnerCategory.setSelection(0)
                 }
             }
         }
 
-        // Tombol kembali
         binding.btnBack.setOnClickListener {
             finish()
         }
 
-        // Tombol simpan
         binding.btnSave.setOnClickListener {
             val title = binding.editTitle.text.toString()
             val content = binding.editContent.text.toString()
 
-            // --- Bagian yang Diperbaiki ---
             var categoryIdToSave: Int? = null
-            val selectedCategory = binding.spinnerCategory.selectedItem // Mengambil objek Category
+            val selectedCategory = binding.spinnerCategory.selectedItem
 
-            if (selectedCategory is Category) { // Pastikan ini adalah objek Category
+            if (selectedCategory is Category) {
                 if (selectedCategory.id == -1) {
-                    // Ini adalah "Tambah Kategori", biarkan categoryIdToSave tetap null
                     Log.d("SaveNote", "Selected 'Tambah Kategori', saving categoryId as null.")
                 } else {
-                    categoryIdToSave = selectedCategory.id // Ambil ID kategori yang sebenarnya
+                    categoryIdToSave = selectedCategory.id
                     Log.d("SaveNote", "Selected category '${selectedCategory.name}', saving categoryId as ${selectedCategory.id}.")
                 }
             } else {
                 Log.e("SaveNote", "Selected item is not a Category object!")
-                // Anda mungkin ingin memberikan feedback ke pengguna atau default ke null
             }
 
 
             if (title.isNotBlank()) {
-                val note = Note(
-                    id = editingNoteId ?: UUID.randomUUID().toString(),
-                    title = title,
-                    content = content,
-                    categoryId = categoryIdToSave // Gunakan ID kategori yang sebenarnya atau null
-                )
+                val db = dbHelper.writableDatabase
 
-                if (editingNoteId == null) {
-                    NoteDao.insert(dbHelper.writableDatabase, note)
+                if (editingNoteId == null) { // Mode Tambah Catatan Baru
+                    val newNote = Note(
+                        id = UUID.randomUUID().toString(),
+                        title = title,
+                        content = content,
+                        categoryId = categoryIdToSave
+                        // isTrashed, isHidden, isFavorite akan menggunakan nilai default false
+                    )
+                    NoteDao.insert(db, newNote)
                     Toast.makeText(this, "Catatan disimpan", Toast.LENGTH_SHORT).show()
-                } else { // Ini adalah blok untuk update
-                    val rowsAffected = NoteDao.update(dbHelper.writableDatabase, note)
-                    if (rowsAffected > 0) {
-                        Toast.makeText(this, "Catatan diperbarui", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(this, "Gagal memperbarui catatan (ID tidak ditemukan)", Toast.LENGTH_SHORT).show()
+                } else { // Mode Update Catatan yang Ada
+                    existingNote?.let { originalNote -> // *** Gunakan existingNote di sini ***
+                        val updatedNote = originalNote.copy( // Gunakan fungsi copy untuk mempertahankan properti lain
+                            title = title,
+                            content = content,
+                            categoryId = categoryIdToSave
+                            // isTrashed, isHidden, isFavorite akan tetap sama karena dicopy dari originalNote
+                        )
+                        val rowsAffected = NoteDao.update(db, updatedNote)
+                        if (rowsAffected > 0) {
+                            Toast.makeText(this, "Catatan diperbarui", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this, "Gagal memperbarui catatan (ID tidak ditemukan)", Toast.LENGTH_SHORT).show()
+                        }
+                    } ?: run {
+                        // Ini terjadi jika editingNoteId ada tapi catatan tidak ditemukan di DB.
+                        // Seharusnya tidak terjadi jika alur normal.
+                        Toast.makeText(this, "Error: Catatan asli tidak ditemukan untuk diperbarui.", Toast.LENGTH_LONG).show()
+                        Log.e("AddEditNoteActivity", "Attempted to update a note with ID $editingNoteId but original note not found.")
                     }
                 }
 
@@ -124,14 +131,11 @@ class AddEditNoteActivity : AppCompatActivity() {
         }
     }
 
+    // ... (kode setupCategorySpinner() dan showAddCategoryDialog() tidak berubah) ...
     private fun setupCategorySpinner() {
         val db = NotesDatabaseHelper(this).readableDatabase
-        categoryMutableList = CategoryDao.getAll(db).toMutableList() // Akan ambil "Uncategorized" dari DB
+        categoryMutableList = CategoryDao.getAll(db).toMutableList()
 
-        // *** HAPUS BARIS INI KARENA "Uncategorized" SUDAH DARI DB ***
-        // categoryMutableList.add(0, Category(id = 0, name = "Uncategorized", colorHex = "#808080"))
-
-        // Tambahkan "Tambah Kategori" di bagian akhir
         categoryMutableList.add(Category(id = -1, name = "Tambah Kategori", colorHex = "#000000"))
 
         val adapterSpinner = CategorySpinnerAdapter(this, categoryMutableList)
@@ -143,10 +147,6 @@ class AddEditNoteActivity : AppCompatActivity() {
                 if (selectedItem is Category && selectedItem.id == -1) {
                     showAddCategoryDialog()
                 }
-                // Tambahan: Jika Anda ingin kategori "Uncategorized" menjadi default saat memilihnya
-                // if (selectedItem is Category && selectedItem.name == "Uncategorized") {
-                //     // Lakukan sesuatu jika "Uncategorized" dipilih
-                // }
             }
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
@@ -158,9 +158,8 @@ class AddEditNoteActivity : AppCompatActivity() {
         val editName = dialogView.findViewById<TextInputEditText>(R.id.editCategoryName)
         val textInputLayoutColor = dialogView.findViewById<TextInputLayout>(R.id.textInputLayoutCategoryColor)
         val editColor = dialogView.findViewById<TextInputEditText>(R.id.editCategoryColor)
-        val colorPreview = dialogView.findViewById<View>(R.id.colorPreview) // Dapatkan reference ke View preview
+        val colorPreview = dialogView.findViewById<View>(R.id.colorPreview)
 
-        // Listener untuk preview warna real-time
         editColor.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -172,15 +171,13 @@ class AddEditNoteActivity : AppCompatActivity() {
                         val colorInt = Color.parseColor(colorString)
                         colorPreview.setBackgroundColor(colorInt)
                         colorPreview.visibility = View.VISIBLE
-                        textInputLayoutColor.error = null // Hapus error jika format benar
+                        textInputLayoutColor.error = null
                     } catch (e: IllegalArgumentException) {
-                        // Ini tidak seharusnya terjadi jika regex sudah benar, tapi untuk jaga-jaga
                         colorPreview.visibility = View.GONE
                         textInputLayoutColor.error = "Format warna HEX tidak valid"
                     }
                 } else {
                     colorPreview.visibility = View.GONE
-                    // Hanya tampilkan error jika input mulai tidak sesuai format (misal, bukan '#')
                     if (colorString.isNotEmpty() && !colorString.startsWith("#")) {
                         textInputLayoutColor.error = "Harus dimulai dengan #"
                     } else if (colorString.length > 1 && !colorString.matches(Regex("^#[0-9A-Fa-f]*$"))) {
@@ -188,29 +185,26 @@ class AddEditNoteActivity : AppCompatActivity() {
                     } else if (colorString.length == 7 && !colorString.matches(Regex("^#[0-9A-Fa-f]{6}$"))) {
                         textInputLayoutColor.error = "Warna harus 6 karakter HEX setelah #"
                     } else {
-                        textInputLayoutColor.error = null // Hapus error jika belum cukup karakter atau belum salah
+                        textInputLayoutColor.error = null
                     }
                 }
             }
         })
 
-
         val alertDialog = AlertDialog.Builder(this)
-            .setView(dialogView) // Set view, judul sudah di layout
-            .setPositiveButton("Simpan", null) // Set null untuk penanganan klik manual
+            .setView(dialogView)
+            .setPositiveButton("Simpan", null)
             .setNegativeButton("Batal") { dialog, _ ->
                 binding.spinnerCategory.setSelection(0)
                 dialog.dismiss()
             }
             .create()
 
-        // Menampilkan dialog
         alertDialog.show()
 
-        // Mengambil referensi tombol setelah dialog ditampilkan
         val positiveButton = alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)
         positiveButton.setOnClickListener {
-            val name = editName.text.toString().trim() // Trim spasi juga untuk nama
+            val name = editName.text.toString().trim()
             val colorHex = editColor.text.toString().trim()
 
             var isValid = true
@@ -239,14 +233,11 @@ class AddEditNoteActivity : AppCompatActivity() {
                     binding.spinnerCategory.setSelection(newCategoryPosition)
                 }
                 Toast.makeText(this, "Kategori '$name' berhasil ditambahkan", Toast.LENGTH_SHORT).show()
-                alertDialog.dismiss() // Tutup dialog hanya jika valid
-            } else {
-                // Toast.makeText(this, "Validasi gagal. Periksa input Anda.", Toast.LENGTH_LONG).show() // Pesan error sudah di TextInputLayout
+                alertDialog.dismiss()
             }
         }
 
-        // Mengatur warna tombol dialog
-        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(this, R.color.green_active)) // Sesuaikan warna
-        alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(this, R.color.gray)) // Sesuaikan warna
+        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(this, R.color.green_active))
+        alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(this, R.color.gray))
     }
 }

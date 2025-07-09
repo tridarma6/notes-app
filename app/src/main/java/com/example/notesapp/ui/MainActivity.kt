@@ -33,14 +33,14 @@ import com.example.notesapp.data.model.Category
 import com.example.notesapp.data.model.Note
 import com.example.notesapp.databinding.ActivityMainBinding
 import android.content.Context
-import android.text.Editable // <-- TAMBAHKAN INI
-import android.text.TextWatcher // <-- TAMBAHKAN INI
-import android.view.inputmethod.EditorInfo // <-- TAMBAHKAN INI
-import android.view.inputmethod.InputMethodManager // <-- TAMBAHKAN INI
-import androidx.lifecycle.lifecycleScope // <-- TAMBAHKAN INI UNTUK DEBOUNCING
-import kotlinx.coroutines.Job // <-- TAMBAHKAN INI UNTUK DEBOUNCING
-import kotlinx.coroutines.delay // <-- TAMBAHKAN INI UNTUK DEBOUNCING
-import kotlinx.coroutines.launch // <-- TAMBAHKAN INI UNTUK DEBOUNCING
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
