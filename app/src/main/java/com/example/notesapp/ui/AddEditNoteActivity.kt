@@ -18,6 +18,12 @@ import com.example.notesapp.data.model.Category
 import com.example.notesapp.data.model.Note
 import com.example.notesapp.databinding.ActivityAddEditNoteBinding
 import java.util.*
+import android.text.Editable
+import android.text.TextWatcher
+import android.graphics.Color // Import ini untuk Color.parseColor
+import androidx.core.content.ContextCompat
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 
 class AddEditNoteActivity : AppCompatActivity() {
 
@@ -148,36 +154,99 @@ class AddEditNoteActivity : AppCompatActivity() {
 
     private fun showAddCategoryDialog() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_category, null)
-        val editName = dialogView.findViewById<EditText>(R.id.editCategoryName)
-        val editColor = dialogView.findViewById<EditText>(R.id.editCategoryColor)
+        val textInputLayoutName = dialogView.findViewById<TextInputLayout>(R.id.textInputLayoutCategoryName)
+        val editName = dialogView.findViewById<TextInputEditText>(R.id.editCategoryName)
+        val textInputLayoutColor = dialogView.findViewById<TextInputLayout>(R.id.textInputLayoutCategoryColor)
+        val editColor = dialogView.findViewById<TextInputEditText>(R.id.editCategoryColor)
+        val colorPreview = dialogView.findViewById<View>(R.id.colorPreview) // Dapatkan reference ke View preview
 
-        AlertDialog.Builder(this)
-            .setTitle("Tambah Kategori Baru")
-            .setView(dialogView)
-            .setPositiveButton("Simpan") { _, _ ->
-                val name = editName.text.toString()
-                // Validasi format warna Hex
-                val colorHex = editColor.text.toString().trim() // Trim spasi
-                if (name.isNotBlank() && colorHex.matches(Regex("^#[0-9A-Fa-f]{6}$"))) {
-                    val category = Category(name = name, colorHex = colorHex)
-                    val db = NotesDatabaseHelper(this).writableDatabase
-                    CategoryDao.insert(db, category)
-                    setupCategorySpinner() // Refresh isi spinner setelah menambah
-                    // Atur spinner ke kategori yang baru ditambahkan
-                    val newCategoryPosition = categoryMutableList.indexOfFirst { it.name == name && it.colorHex == colorHex }
-                    if (newCategoryPosition != -1) {
-                        binding.spinnerCategory.setSelection(newCategoryPosition)
+        // Listener untuk preview warna real-time
+        editColor.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+
+            override fun afterTextChanged(s: Editable?) {
+                val colorString = s.toString().trim()
+                if (colorString.matches(Regex("^#[0-9A-Fa-f]{6}$"))) {
+                    try {
+                        val colorInt = Color.parseColor(colorString)
+                        colorPreview.setBackgroundColor(colorInt)
+                        colorPreview.visibility = View.VISIBLE
+                        textInputLayoutColor.error = null // Hapus error jika format benar
+                    } catch (e: IllegalArgumentException) {
+                        // Ini tidak seharusnya terjadi jika regex sudah benar, tapi untuk jaga-jaga
+                        colorPreview.visibility = View.GONE
+                        textInputLayoutColor.error = "Format warna HEX tidak valid"
                     }
                 } else {
-                    Toast.makeText(this, "Nama tidak boleh kosong dan Warna harus dalam format HEX (#RRGGBB)", Toast.LENGTH_LONG).show()
+                    colorPreview.visibility = View.GONE
+                    // Hanya tampilkan error jika input mulai tidak sesuai format (misal, bukan '#')
+                    if (colorString.isNotEmpty() && !colorString.startsWith("#")) {
+                        textInputLayoutColor.error = "Harus dimulai dengan #"
+                    } else if (colorString.length > 1 && !colorString.matches(Regex("^#[0-9A-Fa-f]*$"))) {
+                        textInputLayoutColor.error = "Hanya huruf A-F dan angka 0-9"
+                    } else if (colorString.length == 7 && !colorString.matches(Regex("^#[0-9A-Fa-f]{6}$"))) {
+                        textInputLayoutColor.error = "Warna harus 6 karakter HEX setelah #"
+                    } else {
+                        textInputLayoutColor.error = null // Hapus error jika belum cukup karakter atau belum salah
+                    }
                 }
             }
+        })
+
+
+        val alertDialog = AlertDialog.Builder(this)
+            .setView(dialogView) // Set view, judul sudah di layout
+            .setPositiveButton("Simpan", null) // Set null untuk penanganan klik manual
             .setNegativeButton("Batal") { dialog, _ ->
-                // Jika dibatalkan, kembalikan pilihan spinner ke item sebelumnya atau "Tidak Ada Kategori"
-                // Ini penting agar "Tambah Kategori" tidak tetap terpilih
-                binding.spinnerCategory.setSelection(0) // Default ke "Tidak Ada Kategori"
+                binding.spinnerCategory.setSelection(0)
                 dialog.dismiss()
             }
-            .show()
+            .create()
+
+        // Menampilkan dialog
+        alertDialog.show()
+
+        // Mengambil referensi tombol setelah dialog ditampilkan
+        val positiveButton = alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)
+        positiveButton.setOnClickListener {
+            val name = editName.text.toString().trim() // Trim spasi juga untuk nama
+            val colorHex = editColor.text.toString().trim()
+
+            var isValid = true
+
+            if (name.isBlank()) {
+                textInputLayoutName.error = "Nama kategori tidak boleh kosong"
+                isValid = false
+            } else {
+                textInputLayoutName.error = null
+            }
+
+            if (!colorHex.matches(Regex("^#[0-9A-Fa-f]{6}$"))) {
+                textInputLayoutColor.error = "Warna harus dalam format HEX (#RRGGBB)"
+                isValid = false
+            } else {
+                textInputLayoutColor.error = null
+            }
+
+            if (isValid) {
+                val category = Category(name = name, colorHex = colorHex)
+                val db = NotesDatabaseHelper(this).writableDatabase
+                CategoryDao.insert(db, category)
+                setupCategorySpinner()
+                val newCategoryPosition = categoryMutableList.indexOfFirst { it.name == name && it.colorHex == colorHex }
+                if (newCategoryPosition != -1) {
+                    binding.spinnerCategory.setSelection(newCategoryPosition)
+                }
+                Toast.makeText(this, "Kategori '$name' berhasil ditambahkan", Toast.LENGTH_SHORT).show()
+                alertDialog.dismiss() // Tutup dialog hanya jika valid
+            } else {
+                // Toast.makeText(this, "Validasi gagal. Periksa input Anda.", Toast.LENGTH_LONG).show() // Pesan error sudah di TextInputLayout
+            }
+        }
+
+        // Mengatur warna tombol dialog
+        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(this, R.color.green_active)) // Sesuaikan warna
+        alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(this, R.color.gray)) // Sesuaikan warna
     }
 }

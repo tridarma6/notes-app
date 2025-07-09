@@ -123,7 +123,7 @@ class MainActivity : AppCompatActivity() {
             currentDisplayMode = NoteDisplayMode.CATEGORY // Set mode
         }
         binding.recyclerCategory.adapter = categoryAdapter
-        binding.recyclerCategory.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        binding.recyclerCategory.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         binding.recyclerCategory.visibility = View.GONE // Default sembunyikan
 
 
