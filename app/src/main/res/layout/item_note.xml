@@ -35,7 +35,7 @@
             android:layout_height="wrap_content"
             android:text="@string/note_content"
             android:textSize="14sp"
-            android:textColor="@color/black"
+            android:textColor="@color/gray"
             android:layout_marginTop="4dp" />
 
         <TextView
