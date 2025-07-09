@@ -5,7 +5,7 @@
     <color name="green_active">#4CAF50</color>
     <color name="button_text_normal">#FFFFFF</color>
     <color name="red">#FF6E64</color>
-    <color name="gray">#B0B0B0</color>
+    <color name="gray">#FFFFFF</color>
     <color name="black">#FFFFFFFF</color>
     <color name="white">#FF000000</color>
     <color name="gray_100">#2A2A2A</color>
@@ -28,4 +28,5 @@
     <color name="gray_spinner">#AAAAAA</color>
     <color name="fab_orange">#FFB74D</color>
     <color name="purple_700">#EDEDED</color>
+    <color name="card">#808080</color>
 </resources>

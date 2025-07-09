@@ -2,7 +2,7 @@ package com.example.notesapp.data.dao
 
 import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
-import com.example.notesapp.data.db.NotesDatabaseHelper
+import com.example.notesapp.data.database.NotesDatabaseHelper
 import com.example.notesapp.data.model.Category
 
 object CategoryDao {

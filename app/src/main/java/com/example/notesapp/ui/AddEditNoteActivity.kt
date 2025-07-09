@@ -13,7 +13,6 @@ import com.example.notesapp.R
 import com.example.notesapp.adapter.CategorySpinnerAdapter
 import com.example.notesapp.data.dao.CategoryDao
 import com.example.notesapp.data.dao.NoteDao
-import com.example.notesapp.data.db.NotesDatabaseHelper
 import com.example.notesapp.data.model.Category
 import com.example.notesapp.data.model.Note
 import com.example.notesapp.databinding.ActivityAddEditNoteBinding
@@ -22,6 +21,7 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.graphics.Color // Import ini untuk Color.parseColor
 import androidx.core.content.ContextCompat
+import com.example.notesapp.data.database.NotesDatabaseHelper
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 
