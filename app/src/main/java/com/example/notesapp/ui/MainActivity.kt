@@ -32,6 +32,15 @@ import com.example.notesapp.data.database.NotesDatabaseHelper
 import com.example.notesapp.data.model.Category
 import com.example.notesapp.data.model.Note
 import com.example.notesapp.databinding.ActivityMainBinding
+import android.content.Context
+import android.text.Editable // <-- TAMBAHKAN INI
+import android.text.TextWatcher // <-- TAMBAHKAN INI
+import android.view.inputmethod.EditorInfo // <-- TAMBAHKAN INI
+import android.view.inputmethod.InputMethodManager // <-- TAMBAHKAN INI
+import androidx.lifecycle.lifecycleScope // <-- TAMBAHKAN INI UNTUK DEBOUNCING
+import kotlinx.coroutines.Job // <-- TAMBAHKAN INI UNTUK DEBOUNCING
+import kotlinx.coroutines.delay // <-- TAMBAHKAN INI UNTUK DEBOUNCING
+import kotlinx.coroutines.launch // <-- TAMBAHKAN INI UNTUK DEBOUNCING
 
 class MainActivity : AppCompatActivity() {
 
@@ -45,6 +54,10 @@ class MainActivity : AppCompatActivity() {
     private var isViewingHidden = false
     // Tambahkan variabel ini untuk melacak mode tampilan saat ini
     private var currentDisplayMode: NoteDisplayMode = NoteDisplayMode.ALL
+    private var searchQuery: String = ""
+    private var selectedCategoryId: Long? = null
+    private var selectedCategoryName: String? = null
+    private var searchJob: Job? = null
 
     companion object {
         const val REQUEST_VERIFY_PIN = 1001
@@ -88,6 +101,11 @@ class MainActivity : AppCompatActivity() {
                 // Gunakan launcher baru di sini
                 val intent = Intent(this, AddEditNoteActivity::class.java).apply {
                     putExtra("EXTRA_NOTE_ID", note.id)
+                    // Pastikan ORIGINAL_DISPLAY_MODE dan SELECTED_CATEGORY_ID diteruskan di sini
+                    putExtra("ORIGINAL_DISPLAY_MODE", currentDisplayMode.name)
+                    if (currentDisplayMode == NoteDisplayMode.CATEGORY && selectedCategoryId != null) {
+                        putExtra("SELECTED_CATEGORY_ID", selectedCategoryId)
+                    }
                 }
                 addEditNoteLauncher.launch(intent)
             },
@@ -109,22 +127,20 @@ class MainActivity : AppCompatActivity() {
         categoryList = CategoryDao.getAll(dbHelper.readableDatabase)
         categoryAdapter = CategoriesAdapter(categoryList) { selectedCategory ->
             Toast.makeText(this, "Kategori: ${selectedCategory.name}", Toast.LENGTH_SHORT).show()
-            val db = dbHelper.readableDatabase
-            val filteredNotes = NoteDao.getAll(db).filter { note ->
-                note.categoryId == selectedCategory.id && !note.isTrashed && !note.isHidden
-            }
-            adapter.displayMode = NoteDisplayMode.ALL
-            adapter.submitList(filteredNotes)
-
-            binding.recyclerCategory.visibility = View.GONE
-            binding.recyclerRecentNotes.visibility = View.VISIBLE
-            binding.recentNotesTitle.text = "Notes in ${selectedCategory.name}"
-            resetAllQuickButtons() // Reset tombol quick filter
-            currentDisplayMode = NoteDisplayMode.CATEGORY // Set mode
+            // Modifikasi: Sekarang kita simpan kategori yang dipilih dan panggil refreshCurrentView
+            this.selectedCategoryId = selectedCategory.id.toLong()
+            this.selectedCategoryName = selectedCategory.name
+            currentDisplayMode = NoteDisplayMode.CATEGORY
+            refreshCurrentView() // Panggil refreshCurrentView untuk memuat catatan kategori dan menerapkan pencarian
+            resetAllQuickButtons()
+            setQuickButtonState(binding.btnCategory, true, R.color.brown_active)
+            isViewingTrash = false
+            isViewingFavorite = false
+            isViewingHidden = false
         }
         binding.recyclerCategory.adapter = categoryAdapter
         binding.recyclerCategory.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
-        binding.recyclerCategory.visibility = View.GONE // Default sembunyikan
+        binding.recyclerCategory.visibility = View.GONE
 
 
         binding.recyclerRecentNotes.layoutManager = GridLayoutManager(this, 2)
@@ -140,53 +156,41 @@ class MainActivity : AppCompatActivity() {
                 target: RecyclerView.ViewHolder
             ): Boolean = false
 
-            // --- BARU: Metode ini akan menentukan arah swipe yang diizinkan ---
             override fun getMovementFlags(
                 recyclerView: RecyclerView,
                 viewHolder: RecyclerView.ViewHolder
             ): Int {
                 val position = viewHolder.adapterPosition
-                // Pastikan posisi valid sebelum mengakses adapter.currentList
                 if (position == RecyclerView.NO_POSITION || position >= adapter.currentList.size) {
-                    return makeMovementFlags(0, 0) // Tidak ada swipe jika posisi tidak valid
+                    return makeMovementFlags(0, 0)
                 }
                 val note = adapter.currentList[position]
 
                 var swipeFlags = 0
 
-                // Izinkan swipe ke KIRI (untuk Sembunyikan) HANYA JIKA:
-                // 1. Catatan belum disembunyikan (!note.isHidden)
-                // 2. Catatan belum di tempat sampah (!note.isTrashed)
                 if (!note.isHidden && !note.isTrashed) {
                     swipeFlags = swipeFlags or ItemTouchHelper.LEFT
                 }
 
-                // Izinkan swipe ke KANAN (untuk Tampilkan/Unhide) HANYA JIKA:
-                // 1. Kita sedang melihat mode hidden (isViewingHidden)
-                // 2. Catatan tersebut memang dalam status hidden (note.isHidden)
                 if (isViewingHidden && note.isHidden) {
                     swipeFlags = swipeFlags or ItemTouchHelper.RIGHT
                 }
 
-                return makeMovementFlags(0, swipeFlags) // 0 untuk drag, swipeFlags untuk swipe
+                return makeMovementFlags(0, swipeFlags)
             }
-            // --- AKHIR BARU ---
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.adapterPosition
-                // Pastikan posisi valid sebelum mengakses adapter.currentList
                 if (position == RecyclerView.NO_POSITION || position >= adapter.currentList.size) {
-                    adapter.notifyItemChanged(position) // Reset tampilan jika ada error
+                    adapter.notifyItemChanged(position)
                     return
                 }
                 val note = adapter.currentList[position]
 
-                // Logika di sini sudah benar, karena getMovementFlags sudah memfilter.
-                // Namun, kita bisa menambahkan pengecekan defensif lagi jika diperlukan.
                 if (direction == ItemTouchHelper.LEFT) {
-                    hideNote(note) // note.isHidden dan note.isTrashed sudah dijamin false oleh getMovementFlags
+                    hideNote(note)
                 } else if (direction == ItemTouchHelper.RIGHT) {
-                    unhideNote(note) // isViewingHidden dan note.isHidden sudah dijamin true oleh getMovementFlags
+                    unhideNote(note)
                 }
             }
 
@@ -199,37 +203,19 @@ class MainActivity : AppCompatActivity() {
             ) {
                 val itemView = viewHolder.itemView
                 val context = itemView.context
-                val position = viewHolder.adapterPosition // Dapatkan posisi item
-                // Dapatkan catatan lagi untuk pengecekan kondisi visual
+                val position = viewHolder.adapterPosition
                 val note =
                     if (position != RecyclerView.NO_POSITION && position < adapter.currentList.size) {
                         adapter.currentList[position]
                     } else {
-                        // Item mungkin sudah dihapus atau tidak valid, jangan gambar
-                        super.onChildDraw(
-                            c,
-                            recyclerView,
-                            viewHolder,
-                            dX,
-                            dY,
-                            actionState,
-                            isCurrentlyActive
-                        )
+                        super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
                         return
                     }
 
-
                 if (dX < 0) { // Swipe ke kiri
-                    // Pastikan visual hanya muncul jika swipe diizinkan untuk menyembunyikan
-                    if (!note.isHidden && !note.isTrashed) { // <--- TAMBAHKAN KONDISI INI DI SINI
-                        val paint = Paint().apply {
-                            color = ContextCompat.getColor(context, R.color.blue_active)
-                        }
-
-                        c.drawRect(
-                            itemView.right + dX, itemView.top.toFloat(),
-                            itemView.right.toFloat(), itemView.bottom.toFloat(), paint
-                        )
+                    if (!note.isHidden && !note.isTrashed) {
+                        val paint = Paint().apply { color = ContextCompat.getColor(context, R.color.blue_active) }
+                        c.drawRect(itemView.right + dX, itemView.top.toFloat(), itemView.right.toFloat(), itemView.bottom.toFloat(), paint)
 
                         val icon = ContextCompat.getDrawable(context, R.drawable.ic_hidden)
                         icon?.let {
@@ -238,34 +224,18 @@ class MainActivity : AppCompatActivity() {
                             val iconLeft = itemView.right - iconSize - 32
                             val iconRight = itemView.right - 32
                             val iconBottom = iconTop + iconSize
-
                             it.setBounds(iconLeft, iconTop, iconRight, iconBottom)
                             it.draw(c)
                         }
-
                         val textPaint = Paint().apply {
-                            color = Color.WHITE
-                            textSize = 40f
-                            isAntiAlias = true
-                            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                            color = Color.WHITE; textSize = 40f; isAntiAlias = true; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                         }
-                        val text = "Hide note?"
-                        val textX = itemView.right - 250f
-                        val textY = itemView.top + itemView.height / 2f + 15f
-                        c.drawText(text, textX, textY, textPaint)
+                        c.drawText("Hide note?", itemView.right - 250f, itemView.top + itemView.height / 2f + 15f, textPaint)
                     }
                 }
-                // Perbaiki kondisi swipe kanan di onChildDraw
-                // Hanya gambar jika memang sedang di tampilan hidden DAN catatan itu hidden
-                if (dX > 0 && isViewingHidden && note.isHidden) { // <--- PERBAIKI KONDISI INI
-                    val paint = Paint().apply {
-                        color = ContextCompat.getColor(context, R.color.soft_green)
-                    }
-
-                    c.drawRect(
-                        itemView.left.toFloat(), itemView.top.toFloat(),
-                        itemView.left + dX, itemView.bottom.toFloat(), paint
-                    )
+                if (dX > 0 && isViewingHidden && note.isHidden) {
+                    val paint = Paint().apply { color = ContextCompat.getColor(context, R.color.soft_green) }
+                    c.drawRect(itemView.left.toFloat(), itemView.top.toFloat(), itemView.left + dX, itemView.bottom.toFloat(), paint)
 
                     val icon = ContextCompat.getDrawable(context, R.drawable.ic_hidden)
                     icon?.let {
@@ -274,49 +244,64 @@ class MainActivity : AppCompatActivity() {
                         val iconLeft = itemView.left + 32
                         val iconRight = iconLeft + iconSize
                         val iconBottom = iconTop + iconSize
-
                         it.setBounds(iconLeft, iconTop, iconRight, iconBottom)
                         it.draw(c)
                     }
-
                     val textPaint = Paint().apply {
-                        color = Color.WHITE
-                        textSize = 40f
-                        isAntiAlias = true
-                        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                        color = Color.WHITE; textSize = 40f; isAntiAlias = true; typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                     }
-                    c.drawText(
-                        "Unhide note?",
-                        itemView.left + 100f,
-                        itemView.top + itemView.height / 2f + 15f,
-                        textPaint
-                    )
+                    c.drawText("Unhide note?", itemView.left + 100f, itemView.top + itemView.height / 2f + 15f, textPaint)
                 }
-                super.onChildDraw(
-                    c,
-                    recyclerView,
-                    viewHolder,
-                    dX,
-                    dY,
-                    actionState,
-                    isCurrentlyActive
-                )
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
             }
         }
 
         ItemTouchHelper(swipeCallback).attachToRecyclerView(binding.recyclerRecentNotes)
 
         binding.fabAddNote.setOnClickListener {
-            // Gunakan launcher baru di sini
-            val intent = Intent(this, AddEditNoteActivity::class.java)
+            val intent = Intent(this, AddEditNoteActivity::class.java).apply {
+                putExtra("ORIGINAL_DISPLAY_MODE", currentDisplayMode.name)
+                if (currentDisplayMode == NoteDisplayMode.CATEGORY && selectedCategoryId != null) {
+                    putExtra("SELECTED_CATEGORY_ID", selectedCategoryId)
+                }
+            }
             addEditNoteLauncher.launch(intent)
         }
 
-        binding.btnTrash.setOnClickListener {
-            loadTrashedNotes()
-            adapter.displayMode = NoteDisplayMode.TRASH
-            binding.recentNotesTitle.text = "Trashed Notes"
+        // --- Listener untuk EditText searchBar ---
+        binding.searchBar.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                searchJob?.cancel() // Batalkan job pencarian sebelumnya
+                searchJob = lifecycleScope.launch {
+                    delay(300) // Tunggu 300ms setelah user berhenti mengetik
+                    searchQuery = s.toString().trim()
+                    refreshCurrentView() // Panggil refresh
+                }
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
 
+        // Untuk menangani saat tombol Enter/Search di keyboard ditekan
+        binding.searchBar.setOnEditorActionListener { v, actionId, event ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE) {
+                searchJob?.cancel() // Batalkan debounce jika Enter ditekan
+                searchQuery = v.text.toString().trim()
+                refreshCurrentView()
+                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.hideSoftInputFromWindow(v.windowToken, 0)
+                binding.searchBar.clearFocus()
+                true
+            } else {
+                false
+            }
+        }
+        // --- AKHIR BARU: Listener untuk EditText searchBar ---
+
+        // --- Listener untuk Quick Filter Buttons (PASTIKAN INI ADALAH SATU-SATUNYA SET LISTENER) ---
+        binding.btnTrash.setOnClickListener {
+            currentDisplayMode = NoteDisplayMode.TRASH
+            refreshCurrentView()
             resetAllQuickButtons()
             setQuickButtonState(binding.btnTrash, true, R.color.red_active)
             isViewingTrash = true
@@ -324,59 +309,55 @@ class MainActivity : AppCompatActivity() {
             isViewingHidden = false
             binding.recyclerCategory.visibility = View.GONE
             binding.recyclerRecentNotes.visibility = View.VISIBLE
-            currentDisplayMode = NoteDisplayMode.TRASH // Set mode
         }
 
         binding.btnCategory.setOnClickListener {
-            binding.recyclerRecentNotes.visibility = View.GONE
-            binding.recyclerCategory.visibility = View.VISIBLE
-
-            val db = dbHelper.readableDatabase
-            categoryList = CategoryDao.getAll(db)
-            (binding.recyclerCategory.adapter as CategoriesAdapter).updateCategories(categoryList)
-
-
-            adapter.displayMode = NoteDisplayMode.CATEGORY
+            currentDisplayMode = NoteDisplayMode.CATEGORY
+            selectedCategoryId = null
+            selectedCategoryName = null
+            refreshCurrentView()
             resetAllQuickButtons()
             setQuickButtonState(binding.btnCategory, true, R.color.brown_active)
-            binding.recentNotesTitle.text = getString(R.string.categories)
             isViewingTrash = false
             isViewingFavorite = false
             isViewingHidden = false
-            currentDisplayMode = NoteDisplayMode.CATEGORY // Set mode
         }
 
         binding.btnFavorite.setOnClickListener {
-            val db = dbHelper.readableDatabase
-            val favoriteNotes = NoteDao.getAll(db).filter { it.isFavorite && !it.isTrashed && !it.isHidden}
-            adapter.displayMode = NoteDisplayMode.FAVORITE
-            adapter.submitList(favoriteNotes)
-            binding.recentNotesTitle.text = "Favorite Notes"
+            currentDisplayMode = NoteDisplayMode.FAVORITE
+            refreshCurrentView()
             resetAllQuickButtons()
             setQuickButtonState(binding.btnFavorite, true, R.color.yellow_active)
-            isViewingTrash = false // Perbaiki: set ini ke false
+            isViewingTrash = false
             isViewingFavorite = true
             isViewingHidden = false
             binding.recyclerCategory.visibility = View.GONE
             binding.recyclerRecentNotes.visibility = View.VISIBLE
-            currentDisplayMode = NoteDisplayMode.FAVORITE // Set mode
         }
 
         binding.btnHidden.setOnClickListener {
-            verifyPinLauncher.launch(Intent(this, VerifyPinActivity::class.java))
-            binding.recyclerCategory.visibility = View.GONE
-            binding.recyclerRecentNotes.visibility = View.VISIBLE
-            // currentDisplayMode akan diatur di showHiddenNotes setelah verifikasi PIN
+            val intent = Intent(this, VerifyPinActivity::class.java)
+            verifyPinLauncher.launch(intent)
         }
 
         binding.btnAllNotes.setOnClickListener {
-            resetToAllNotesView() // Panggil metode baru
+            currentDisplayMode = NoteDisplayMode.ALL
+            refreshCurrentView()
+            resetAllQuickButtons()
+            setQuickButtonState(binding.btnAllNotes, true, R.color.green_active)
+            isViewingTrash = false
+            isViewingFavorite = false
+            isViewingHidden = false
+            binding.recyclerCategory.visibility = View.GONE
+            binding.recyclerRecentNotes.visibility = View.VISIBLE
         }
 
+        // --- Listener untuk Bottom Navigation (PASTIKAN INI ADALAH SATU-SATUNYA SET LISTENER) ---
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.menu_notes -> {
-                    resetToAllNotesView()
+                    currentDisplayMode = NoteDisplayMode.ALL
+                    refreshCurrentView()
                     true
                 }
                 R.id.menu_event -> {
@@ -392,20 +373,20 @@ class MainActivity : AppCompatActivity() {
                 else -> false
             }
         }
+        // --- AKHIR Listener untuk Bottom Navigation ---
 
         // Panggil ini di akhir onCreate untuk menampilkan catatan awal
-        resetToAllNotesView()
+        currentDisplayMode = NoteDisplayMode.ALL // Pastikan mode awal ALL
+        refreshCurrentView() // Panggil refresh untuk memuat data awal dan menerapkan pencarian
     }
 
 
     override fun onResume() {
         super.onResume()
-        // Kita tidak lagi mengandalkan isViewingX di onResume untuk refresh utama
-        // Sebaliknya, jika currentDisplayMode adalah ALL (normal), kita refresh
-        // Jika tidak, kita biarkan refreshCurrentView() yang menangani
-        if (currentDisplayMode == NoteDisplayMode.ALL) {
-            loadNotes()
-        }
+        // Reset query saat kembali ke MainActivity untuk menghindari filter yang tidak diinginkan
+        // jika pengguna tidak melihat search bar sebelumnya
+        searchQuery = binding.searchBar.text.toString().trim() // Ambil teks jika ada
+        refreshCurrentView()
         // Pastikan daftar kategori juga diperbarui setiap kali onResume dipanggil
         val db = dbHelper.readableDatabase
         categoryList = CategoryDao.getAll(db)
@@ -449,16 +430,69 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshCurrentView() {
-        when (currentDisplayMode) { // Gunakan currentDisplayMode
-            NoteDisplayMode.TRASH -> loadTrashedNotes()
-            NoteDisplayMode.FAVORITE -> {
-                val db = dbHelper.readableDatabase
-                val favoriteNotes = NoteDao.getAll(db).filter { it.isFavorite && !it.isTrashed && !it.isHidden }
-                adapter.submitList(favoriteNotes)
+        val db = dbHelper.readableDatabase
+        var baseNotes: List<Note> = emptyList()
+        var currentTitle: String = ""
+
+        when (currentDisplayMode) {
+            NoteDisplayMode.ALL -> {
+                baseNotes = NoteDao.getAll(db).filter { !it.isTrashed && !it.isHidden }
+                currentTitle = getString(R.string.recent_notes)
+                binding.recyclerRecentNotes.visibility = View.VISIBLE
+                binding.recyclerCategory.visibility = View.GONE
+                selectedCategoryId = null
             }
-            NoteDisplayMode.HIDDEN -> showHiddenNotes()
-            else -> loadNotes() // Default ke ALL
+            NoteDisplayMode.TRASH -> {
+                baseNotes = NoteDao.getAll(db).filter { it.isTrashed }
+                currentTitle = "Trashed Notes"
+                binding.recyclerRecentNotes.visibility = View.VISIBLE
+                binding.recyclerCategory.visibility = View.GONE
+                selectedCategoryId = null
+            }
+            NoteDisplayMode.FAVORITE -> {
+                baseNotes = NoteDao.getAll(db).filter { it.isFavorite && !it.isTrashed && !it.isHidden }
+                currentTitle = "Favorite Notes"
+                binding.recyclerRecentNotes.visibility = View.VISIBLE
+                binding.recyclerCategory.visibility = View.GONE
+                selectedCategoryId = null
+            }
+            NoteDisplayMode.HIDDEN -> {
+                baseNotes = NoteDao.getAll(db).filter { it.isHidden }
+                currentTitle = "Hidden Notes"
+                binding.recyclerRecentNotes.visibility = View.VISIBLE
+                binding.recyclerCategory.visibility = View.GONE
+                selectedCategoryId = null
+            }
+            NoteDisplayMode.CATEGORY -> {
+                if (selectedCategoryId != null) {
+                    baseNotes = NoteDao.getAll(db).filter {
+                        it.categoryId?.toLong() == selectedCategoryId && !it.isTrashed && !it.isHidden
+                    }
+                    currentTitle = "Notes in ${selectedCategoryName ?: "Category"}"
+                    binding.recyclerRecentNotes.visibility = View.VISIBLE
+                    binding.recyclerCategory.visibility = View.GONE
+                } else {
+                    binding.recentNotesTitle.text = getString(R.string.categories)
+                    binding.recyclerRecentNotes.visibility = View.GONE
+                    binding.recyclerCategory.visibility = View.VISIBLE
+                    adapter.submitList(emptyList())
+                    return
+                }
+            }
         }
+
+        val finalNotes = if (searchQuery.isNotBlank()) {
+            baseNotes.filter { note ->
+                note.title.contains(searchQuery, ignoreCase = true) ||
+                        note.content.contains(searchQuery, ignoreCase = true)
+            }
+        } else {
+            baseNotes
+        }
+
+        adapter.submitList(finalNotes)
+        adapter.displayMode = currentDisplayMode
+        binding.recentNotesTitle.text = currentTitle
     }
 
     // --- Metode Baru untuk Reset ke Tampilan "All Notes" ---
