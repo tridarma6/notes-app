@@ -133,24 +133,62 @@ class MainActivity : AppCompatActivity() {
 
 
         val swipeCallback = object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+
             override fun onMove(
                 recyclerView: RecyclerView,
                 viewHolder: RecyclerView.ViewHolder,
                 target: RecyclerView.ViewHolder
             ): Boolean = false
 
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+            // --- BARU: Metode ini akan menentukan arah swipe yang diizinkan ---
+            override fun getMovementFlags(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder
+            ): Int {
                 val position = viewHolder.adapterPosition
+                // Pastikan posisi valid sebelum mengakses adapter.currentList
+                if (position == RecyclerView.NO_POSITION || position >= adapter.currentList.size) {
+                    return makeMovementFlags(0, 0) // Tidak ada swipe jika posisi tidak valid
+                }
                 val note = adapter.currentList[position]
 
-                if (direction == ItemTouchHelper.LEFT && !note.isHidden && !note.isTrashed) {
-                    hideNote(note)
-                } else if (direction == ItemTouchHelper.RIGHT && isViewingHidden) {
-                    unhideNote(note)
-                }
-                // refreshCurrentView() // refreshCurrentView sudah dipanggil di hideNote/unhideNote
-            }
+                var swipeFlags = 0
 
+                // Izinkan swipe ke KIRI (untuk Sembunyikan) HANYA JIKA:
+                // 1. Catatan belum disembunyikan (!note.isHidden)
+                // 2. Catatan belum di tempat sampah (!note.isTrashed)
+                if (!note.isHidden && !note.isTrashed) {
+                    swipeFlags = swipeFlags or ItemTouchHelper.LEFT
+                }
+
+                // Izinkan swipe ke KANAN (untuk Tampilkan/Unhide) HANYA JIKA:
+                // 1. Kita sedang melihat mode hidden (isViewingHidden)
+                // 2. Catatan tersebut memang dalam status hidden (note.isHidden)
+                if (isViewingHidden && note.isHidden) {
+                    swipeFlags = swipeFlags or ItemTouchHelper.RIGHT
+                }
+
+                return makeMovementFlags(0, swipeFlags) // 0 untuk drag, swipeFlags untuk swipe
+            }
+            // --- AKHIR BARU ---
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.adapterPosition
+                // Pastikan posisi valid sebelum mengakses adapter.currentList
+                if (position == RecyclerView.NO_POSITION || position >= adapter.currentList.size) {
+                    adapter.notifyItemChanged(position) // Reset tampilan jika ada error
+                    return
+                }
+                val note = adapter.currentList[position]
+
+                // Logika di sini sudah benar, karena getMovementFlags sudah memfilter.
+                // Namun, kita bisa menambahkan pengecekan defensif lagi jika diperlukan.
+                if (direction == ItemTouchHelper.LEFT) {
+                    hideNote(note) // note.isHidden dan note.isTrashed sudah dijamin false oleh getMovementFlags
+                } else if (direction == ItemTouchHelper.RIGHT) {
+                    unhideNote(note) // isViewingHidden dan note.isHidden sudah dijamin true oleh getMovementFlags
+                }
+            }
 
             override fun onChildDraw(
                 c: Canvas,
@@ -161,41 +199,65 @@ class MainActivity : AppCompatActivity() {
             ) {
                 val itemView = viewHolder.itemView
                 val context = itemView.context
+                val position = viewHolder.adapterPosition // Dapatkan posisi item
+                // Dapatkan catatan lagi untuk pengecekan kondisi visual
+                val note =
+                    if (position != RecyclerView.NO_POSITION && position < adapter.currentList.size) {
+                        adapter.currentList[position]
+                    } else {
+                        // Item mungkin sudah dihapus atau tidak valid, jangan gambar
+                        super.onChildDraw(
+                            c,
+                            recyclerView,
+                            viewHolder,
+                            dX,
+                            dY,
+                            actionState,
+                            isCurrentlyActive
+                        )
+                        return
+                    }
+
 
                 if (dX < 0) { // Swipe ke kiri
-                    val paint = Paint().apply {
-                        color = ContextCompat.getColor(context, R.color.blue_active)
+                    // Pastikan visual hanya muncul jika swipe diizinkan untuk menyembunyikan
+                    if (!note.isHidden && !note.isTrashed) { // <--- TAMBAHKAN KONDISI INI DI SINI
+                        val paint = Paint().apply {
+                            color = ContextCompat.getColor(context, R.color.blue_active)
+                        }
+
+                        c.drawRect(
+                            itemView.right + dX, itemView.top.toFloat(),
+                            itemView.right.toFloat(), itemView.bottom.toFloat(), paint
+                        )
+
+                        val icon = ContextCompat.getDrawable(context, R.drawable.ic_hidden)
+                        icon?.let {
+                            val iconSize = 48
+                            val iconTop = itemView.top + (itemView.height - iconSize) / 2
+                            val iconLeft = itemView.right - iconSize - 32
+                            val iconRight = itemView.right - 32
+                            val iconBottom = iconTop + iconSize
+
+                            it.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+                            it.draw(c)
+                        }
+
+                        val textPaint = Paint().apply {
+                            color = Color.WHITE
+                            textSize = 40f
+                            isAntiAlias = true
+                            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                        }
+                        val text = "Hide note?"
+                        val textX = itemView.right - 250f
+                        val textY = itemView.top + itemView.height / 2f + 15f
+                        c.drawText(text, textX, textY, textPaint)
                     }
-
-                    c.drawRect(
-                        itemView.right + dX, itemView.top.toFloat(),
-                        itemView.right.toFloat(), itemView.bottom.toFloat(), paint
-                    )
-
-                    val icon = ContextCompat.getDrawable(context, R.drawable.ic_hidden)
-                    icon?.let {
-                        val iconSize = 48
-                        val iconTop = itemView.top + (itemView.height - iconSize) / 2
-                        val iconLeft = itemView.right - iconSize - 32
-                        val iconRight = itemView.right - 32
-                        val iconBottom = iconTop + iconSize
-
-                        it.setBounds(iconLeft, iconTop, iconRight, iconBottom)
-                        it.draw(c)
-                    }
-
-                    val textPaint = Paint().apply {
-                        color = Color.WHITE
-                        textSize = 40f
-                        isAntiAlias = true
-                        typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                    }
-                    val text = "Hide note?"
-                    val textX = itemView.right - 250f
-                    val textY = itemView.top + itemView.height / 2f + 15f
-                    c.drawText(text, textX, textY, textPaint)
                 }
-                if (dX > 0 && isViewingHidden) {
+                // Perbaiki kondisi swipe kanan di onChildDraw
+                // Hanya gambar jika memang sedang di tampilan hidden DAN catatan itu hidden
+                if (dX > 0 && isViewingHidden && note.isHidden) { // <--- PERBAIKI KONDISI INI
                     val paint = Paint().apply {
                         color = ContextCompat.getColor(context, R.color.soft_green)
                     }
@@ -223,11 +285,23 @@ class MainActivity : AppCompatActivity() {
                         isAntiAlias = true
                         typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                     }
-                    c.drawText("Unhide note?", itemView.left + 100f, itemView.top + itemView.height / 2f + 15f, textPaint)
+                    c.drawText(
+                        "Unhide note?",
+                        itemView.left + 100f,
+                        itemView.top + itemView.height / 2f + 15f,
+                        textPaint
+                    )
                 }
-                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
+                super.onChildDraw(
+                    c,
+                    recyclerView,
+                    viewHolder,
+                    dX,
+                    dY,
+                    actionState,
+                    isCurrentlyActive
+                )
             }
-
         }
 
         ItemTouchHelper(swipeCallback).attachToRecyclerView(binding.recyclerRecentNotes)
