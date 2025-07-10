@@ -146,11 +146,8 @@ class MainActivity : AppCompatActivity() {
             binding.recyclerCategory.visibility = View.GONE
             binding.recyclerRecentNotes.visibility = View.VISIBLE
         }
-        // Atur layout manager untuk RecyclerView Kategori Filter
         binding.recyclerCategory.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
-        // Adapter akan diatur saat dialog manajemen kategori dipilih atau saat btnCategory diklik
 
-        // Inisialisasi categoryManageAdapter (untuk manajemen kategori)
         categoryManageAdapter = CategoryManageAdapter(
             mutableListOf(),
             onEditClick = { category ->
@@ -187,11 +184,9 @@ class MainActivity : AppCompatActivity() {
                 if (isViewingHidden && note.isHidden) {
                     swipeFlags = swipeFlags or ItemTouchHelper.RIGHT
                 }
-                // --- PERUBAHAN UTAMA: Tambahkan swipe ke kanan untuk mengembalikan dari trash ---
                 if (isViewingTrash && note.isTrashed) {
                     swipeFlags = swipeFlags or ItemTouchHelper.RIGHT // Restore note from trash
                 }
-                // --- END PERUBAHAN UTAMA ---
                 return makeMovementFlags(0, swipeFlags)
             }
 
@@ -205,10 +200,9 @@ class MainActivity : AppCompatActivity() {
 
                 if (direction == ItemTouchHelper.LEFT) {
                     // Logic untuk hide note
-                    if (!note.isHidden && !note.isTrashed) { // Pastikan hanya berlaku untuk catatan non-hidden/non-trashed
+                    if (!note.isHidden && !note.isTrashed) {
                         hideNote(note)
                     } else {
-                        // Jika bukan kondisi untuk hide, kembalikan item ke posisi semula
                         notesAdapter.notifyItemChanged(position)
                     }
                 } else if (direction == ItemTouchHelper.RIGHT) {
@@ -216,13 +210,10 @@ class MainActivity : AppCompatActivity() {
                     if (isViewingHidden && note.isHidden) {
                         unhideNote(note)
                     }
-                    // --- PERUBAHAN UTAMA: Panggil restoreNote jika sedang di trash ---
                     else if (isViewingTrash && note.isTrashed) {
                         restoreNote(note)
                     }
-                    // --- END PERUBAHAN UTAMA ---
                     else {
-                        // Jika bukan kondisi untuk unhide atau restore, kembalikan item
                         notesAdapter.notifyItemChanged(position)
                     }
                 }
@@ -277,7 +268,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     c.drawText("Unhide note?", itemView.left + 100f, textYOffset, textPaint)
                 }
-                // --- PERUBAHAN UTAMA: Swipe ke kanan untuk Restore note (jika sedang melihat trash notes) ---
+                // Swipe ke kanan untuk Restore note (jika sedang melihat trash notes)
                 else if (dX > 0 && isViewingTrash && note.isTrashed) {
                     val paint = Paint().apply { color = ContextCompat.getColor(context, R.color.soft_blue) } // Warna biru untuk restore
                     c.drawRect(itemView.left.toFloat(), itemView.top.toFloat(), itemView.left + dX, itemView.bottom.toFloat(), paint)
@@ -291,7 +282,6 @@ class MainActivity : AppCompatActivity() {
                     }
                     c.drawText("Restore note?", itemView.left + 100f, textYOffset, textPaint)
                 }
-                // --- END PERUBAHAN UTAMA ---
                 super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
             }
         }
@@ -344,11 +334,10 @@ class MainActivity : AppCompatActivity() {
             isViewingHidden = false
         }
 
-        // --- START PERUBAHAN UTAMA: Listener untuk btnCategory yang Multifungsi ---
+        // Listener untuk btnCategory yang Multifungsi
         binding.btnCategory.setOnClickListener {
             showCategorySelectionDialog()
         }
-        // --- END PERUBAHAN UTAMA ---
 
         binding.btnFavorite.setOnClickListener {
             currentDisplayMode = NoteDisplayMode.FAVORITE
@@ -395,7 +384,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        resetToAllNotesView() // Panggil ini di akhir onCreate untuk menampilkan catatan awal
+        resetToAllNotesView()
     }
 
 
@@ -404,16 +393,13 @@ class MainActivity : AppCompatActivity() {
         searchQuery = binding.searchBar.text.toString().trim()
         refreshCurrentView()
 
-        // Perbarui adapter kategori yang sesuai berdasarkan mode tampilan saat ini
         val db = dbHelper.readableDatabase
         when (currentDisplayMode) {
             NoteDisplayMode.CATEGORY -> {
-                // Saat dalam mode CATEGORY (filter), pastikan categoryFilterAdapter yang aktif
                 val categoriesForFilter = CategoryDao.getAll(db)
                 (binding.recyclerCategory.adapter as? CategoriesAdapter)?.updateCategories(categoriesForFilter)
             }
             NoteDisplayMode.MANAGE_CATEGORIES -> {
-                // Saat dalam mode MANAGE_CATEGORIES, pastikan categoryManageAdapter yang aktif
                 loadCategoriesForManage()
             }
             else -> {
@@ -427,7 +413,6 @@ class MainActivity : AppCompatActivity() {
         var baseNotes: List<Note> = emptyList()
         var currentTitle: String = ""
 
-        // Selalu sembunyikan kedua RecyclerViews terlebih dahulu, lalu tampilkan yang benar
         binding.recyclerRecentNotes.visibility = View.GONE
         binding.recyclerCategory.visibility = View.GONE
 
@@ -457,8 +442,8 @@ class MainActivity : AppCompatActivity() {
                 currentTitle = "Favorite Notes"
                 binding.recyclerRecentNotes.visibility = View.VISIBLE
                 selectedCategoryId = null
-                notesAdapter.displayMode = NoteDisplayMode.FAVORITE // Pastikan displayMode diatur
-                if (binding.recyclerRecentNotes.adapter != notesAdapter) { // Periksa dan set adapter notes
+                notesAdapter.displayMode = NoteDisplayMode.FAVORITE
+                if (binding.recyclerRecentNotes.adapter != notesAdapter) {
                     binding.recyclerRecentNotes.adapter = notesAdapter
                 }
             }
@@ -467,34 +452,32 @@ class MainActivity : AppCompatActivity() {
                 currentTitle = "Hidden Notes"
                 binding.recyclerRecentNotes.visibility = View.VISIBLE
                 selectedCategoryId = null
-                notesAdapter.displayMode = NoteDisplayMode.HIDDEN // Pastikan displayMode diatur
-                if (binding.recyclerRecentNotes.adapter != notesAdapter) { // Periksa dan set adapter notes
+                notesAdapter.displayMode = NoteDisplayMode.HIDDEN
+                if (binding.recyclerRecentNotes.adapter != notesAdapter) {
                     binding.recyclerRecentNotes.adapter = notesAdapter
                 }
             }
             NoteDisplayMode.CATEGORY -> {
-                // Jika selectedCategoryId masih null, berarti kita baru klik btnCategory dan ingin menampilkan daftar filter
                 if (selectedCategoryId == null) {
                     currentTitle = getString(R.string.categories)
                     binding.recyclerCategory.visibility = View.VISIBLE
                     // Set adapter ke categoryFilterAdapter
-                    if (binding.recyclerCategory.adapter != categoryFilterAdapter) { // Periksa dan set adapter filter
+                    if (binding.recyclerCategory.adapter != categoryFilterAdapter) {
                         binding.recyclerCategory.adapter = categoryFilterAdapter
                     }
                     val categoriesForFilter = CategoryDao.getAll(db)
                     categoryFilterAdapter.updateCategories(categoriesForFilter)
-                    notesAdapter.submitList(emptyList()) // Kosongkan daftar catatan
+                    notesAdapter.submitList(emptyList())
                     binding.recentNotesTitle.text = currentTitle
-                    return // Keluar dari fungsi karena kita tidak menampilkan catatan
+                    return
                 } else {
-                    // Jika kategori sudah dipilih, tampilkan catatan yang terfilter
                     baseNotes = NoteDao.getAll(db).filter {
                         it.categoryId?.toLong() == selectedCategoryId && !it.isTrashed && !it.isHidden
                     }
                     currentTitle = "Notes in ${selectedCategoryName ?: "Category"}"
                     binding.recyclerRecentNotes.visibility = View.VISIBLE
-                    notesAdapter.displayMode = NoteDisplayMode.CATEGORY // Pastikan displayMode diatur
-                    if (binding.recyclerRecentNotes.adapter != notesAdapter) { // Periksa dan set adapter notes
+                    notesAdapter.displayMode = NoteDisplayMode.CATEGORY
+                    if (binding.recyclerRecentNotes.adapter != notesAdapter) {
                         binding.recyclerRecentNotes.adapter = notesAdapter
                     }
                 }
@@ -503,13 +486,13 @@ class MainActivity : AppCompatActivity() {
                 currentTitle = "Manage Categories"
                 binding.recyclerCategory.visibility = View.VISIBLE
                 // Set adapter ke categoryManageAdapter
-                if (binding.recyclerCategory.adapter != categoryManageAdapter) { // Periksa dan set adapter manage
+                if (binding.recyclerCategory.adapter != categoryManageAdapter) {
                     binding.recyclerCategory.adapter = categoryManageAdapter
                 }
                 loadCategoriesForManage() // Memuat dan memperbarui data untuk manajemen
-                notesAdapter.submitList(emptyList()) // Kosongkan daftar catatan
+                notesAdapter.submitList(emptyList())
                 binding.recentNotesTitle.text = currentTitle
-                return // Keluar dari fungsi karena kita tidak menampilkan catatan
+                return
             }
         }
 
@@ -550,24 +533,22 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, "Catatan ditampilkan", Toast.LENGTH_SHORT).show()
     }
 
-    // --- PERUBAHAN UTAMA: Fungsi baru untuk mengembalikan catatan dari trash ---
     private fun restoreNote(note: Note) {
         val updatedNote = note.copy(isTrashed = false)
         NoteDao.update(dbHelper.writableDatabase, updatedNote)
         refreshCurrentView()
         Toast.makeText(this, "Catatan berhasil dipulihkan", Toast.LENGTH_SHORT).show()
     }
-    // --- END PERUBAHAN UTAMA ---
 
     private fun resetToAllNotesView() {
         currentDisplayMode = NoteDisplayMode.ALL
-        refreshCurrentView() // Ini akan menangani visibilitas dan judul
+        refreshCurrentView()
         resetAllQuickButtons()
         setQuickButtonState(binding.btnAllNotes, true, R.color.green_active)
         isViewingTrash = false
         isViewingFavorite = false
         isViewingHidden = false
-        selectedCategoryId = null // Reset selected category
+        selectedCategoryId = null
         selectedCategoryName = null
     }
 
@@ -708,7 +689,6 @@ class MainActivity : AppCompatActivity() {
         val db = dbHelper.readableDatabase
         // Ambil semua kategori, tapi saring "Uncategorized" (id = 0) karena tidak bisa diedit/dihapus
         val categories = CategoryDao.getAll(db).filter { it.id != 0 }
-        // --- Pastikan baris ini terpanggil ---
         categoryManageAdapter.updateCategories(categories as MutableList<Category>) // Pastikan di-cast ke MutableList jika adapter membutuhkannya
     }
 
@@ -851,18 +831,18 @@ class MainActivity : AppCompatActivity() {
                         isViewingTrash = false
                         isViewingFavorite = false
                         isViewingHidden = false
-                        selectedCategoryId = null // Reset agar menampilkan semua kategori untuk filter
-                        refreshCurrentView() // Ini akan menampilkan recyclerCategory dengan categoryFilterAdapter
+                        selectedCategoryId = null
+                        refreshCurrentView()
                     }
                     1 -> { // Manage Categories (Add/Edit/Delete)
                         currentDisplayMode = NoteDisplayMode.MANAGE_CATEGORIES
                         resetAllQuickButtons()
-                        setQuickButtonState(binding.btnCategory, true, R.color.brown_active) // Tetap tandai btnCategory aktif
+                        setQuickButtonState(binding.btnCategory, true, R.color.brown_active)
                         isViewingTrash = false
                         isViewingFavorite = false
                         isViewingHidden = false
-                        selectedCategoryId = null // Reset selected category
-                        refreshCurrentView() // Ini akan menampilkan recyclerCategory dengan categoryManageAdapter
+                        selectedCategoryId = null
+                        refreshCurrentView()
                     }
                 }
                 dialog.dismiss()

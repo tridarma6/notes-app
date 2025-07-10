@@ -25,9 +25,6 @@ class CategoryManageAdapter(
         val btnDeleteCategory: ImageView = itemView.findViewById(R.id.btnDeleteCategory)
 
         fun bind(category: Category) {
-            // ... (kode untuk menampilkan nama dan warna) ...
-
-            // --- PASTIKAN LISTENER INI ADA DAN BENAR ---
             btnEditCategory.setOnClickListener {
                 onEditClick(category) // Panggil lambda onEditClick yang diteruskan dari MainActivity
             }
@@ -55,7 +52,6 @@ class CategoryManageAdapter(
     override fun onBindViewHolder(holder: CategoryViewHolder, position: Int) {
         val category = categories[position]
 
-        // Atur warna lingkaran
         val drawable = holder.categoryColorCircle.background as? GradientDrawable
         if (drawable != null) {
             try {
@@ -67,7 +63,6 @@ class CategoryManageAdapter(
 
         holder.categoryNameText.text = category.name
 
-        // Sembunyikan tombol edit/delete untuk "Uncategorized"
         if (category.id == 0) { // ID 0 untuk "Uncategorized"
             holder.btnEditCategory.visibility = View.GONE
             holder.btnDeleteCategory.visibility = View.GONE

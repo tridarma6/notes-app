@@ -23,12 +23,9 @@ class NotesDatabaseHelper(context: Context) :
     }
 
     override fun onUpgrade(db: SQLiteDatabase?, oldVersion: Int, newVersion: Int) {
-        // Hapus tabel lama jika ada, lalu buat yang baru
-        // Ini adalah strategi sederhana untuk upgrade. Untuk aplikasi produksi, pertimbangkan migrasi data.
         if (oldVersion < 2) {
             db?.execSQL("DROP TABLE IF EXISTS ${EventDao.TABLE_EVENTS}") // Hapus tabel events jika sudah ada
             db?.execSQL(EventDao.CREATE_TABLE_EVENTS) // Buat ulang tabel events
         }
-        // Jika ada versi yang lebih baru di masa depan, tambahkan logika upgrade di sini
     }
 }

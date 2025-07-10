@@ -18,7 +18,6 @@ class InputSecurityAnswerActivity : AppCompatActivity() {
         binding = ActivityInputSecurityAnswerBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // --- Listener untuk tombol "Back" ---
         binding.backArrow.setOnClickListener {
             setResult(Activity.RESULT_CANCELED)
             finish()
@@ -28,7 +27,6 @@ class InputSecurityAnswerActivity : AppCompatActivity() {
             finish()
         }
 
-        // --- Ambil indeks pertanyaan dari Intent ---
         questionIndex = intent.getIntExtra("QUESTION_INDEX", -1)
         if (questionIndex == -1) {
             Toast.makeText(this, "Kesalahan: Pertanyaan tidak valid.", Toast.LENGTH_SHORT).show()
@@ -37,7 +35,6 @@ class InputSecurityAnswerActivity : AppCompatActivity() {
             return
         }
 
-        // --- Tampilkan pertanyaan yang dipilih ---
         val questions = resources.getStringArray(R.array.security_questions)
         if (questionIndex >= 0 && questionIndex < questions.size) {
             binding.tvSelectedQuestion.text = questions[questionIndex]
@@ -46,7 +43,6 @@ class InputSecurityAnswerActivity : AppCompatActivity() {
             binding.btnSaveAnswer.isEnabled = false // Nonaktifkan tombol simpan jika pertanyaan tidak valid
         }
 
-        // --- Listener untuk tombol "Simpan Jawaban" ---
         binding.btnSaveAnswer.setOnClickListener {
             val answer = binding.etSecurityAnswer.text.toString().trim()
             if (answer.isEmpty()) {

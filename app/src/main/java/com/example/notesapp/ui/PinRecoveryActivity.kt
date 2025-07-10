@@ -17,7 +17,6 @@ class PinRecoveryActivity : AppCompatActivity() {
         binding = ActivityPinRecoveryBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // --- Listener untuk tombol "Back" (panah + teks) ---
         binding.backArrow.setOnClickListener {
             setResult(Activity.RESULT_CANCELED) // Mengindikasikan pembatalan
             finish()
@@ -27,10 +26,8 @@ class PinRecoveryActivity : AppCompatActivity() {
             finish()
         }
 
-        // --- Tampilkan Pertanyaan Keamanan ---
         displaySecurityQuestion()
 
-        // --- Listener untuk tombol "Verifikasi Jawaban" ---
         binding.btnVerifyAnswer.setOnClickListener {
             val userAnswer = binding.etSecurityAnswer.text.toString().trim()
             if (userAnswer.isEmpty()) {
@@ -66,7 +63,6 @@ class PinRecoveryActivity : AppCompatActivity() {
             binding.tvSecurityQuestion.text = getString(R.string.no_security_question_set)
             binding.btnVerifyAnswer.isEnabled = false // Nonaktifkan tombol verifikasi
             Toast.makeText(this, "Tidak ada pertanyaan keamanan yang diatur. Tidak bisa memulihkan PIN.", Toast.LENGTH_LONG).show()
-            // Anda mungkin ingin menambahkan finish() di sini atau opsi untuk kontak dukungan
         }
     }
 }

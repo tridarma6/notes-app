@@ -104,8 +104,8 @@ class AddEditNoteActivity : AppCompatActivity() {
                     NoteDao.insert(db, newNote)
                     Toast.makeText(this, "Catatan disimpan", Toast.LENGTH_SHORT).show()
                 } else { // Mode Update Catatan yang Ada
-                    existingNote?.let { originalNote -> // *** Gunakan existingNote di sini ***
-                        val updatedNote = originalNote.copy( // Gunakan fungsi copy untuk mempertahankan properti lain
+                    existingNote?.let { originalNote ->
+                        val updatedNote = originalNote.copy(
                             title = title,
                             content = content,
                             categoryId = categoryIdToSave
@@ -118,8 +118,6 @@ class AddEditNoteActivity : AppCompatActivity() {
                             Toast.makeText(this, "Gagal memperbarui catatan (ID tidak ditemukan)", Toast.LENGTH_SHORT).show()
                         }
                     } ?: run {
-                        // Ini terjadi jika editingNoteId ada tapi catatan tidak ditemukan di DB.
-                        // Seharusnya tidak terjadi jika alur normal.
                         Toast.makeText(this, "Error: Catatan asli tidak ditemukan untuk diperbarui.", Toast.LENGTH_LONG).show()
                         Log.e("AddEditNoteActivity", "Attempted to update a note with ID $editingNoteId but original note not found.")
                     }
@@ -132,7 +130,6 @@ class AddEditNoteActivity : AppCompatActivity() {
         }
     }
 
-    // ... (kode setupCategorySpinner() dan showAddCategoryDialog() tidak berubah) ...
     private fun setupCategorySpinner() {
         val db = NotesDatabaseHelper(this).readableDatabase
         categoryMutableList = CategoryDao.getAll(db).toMutableList()
@@ -160,7 +157,6 @@ class AddEditNoteActivity : AppCompatActivity() {
         val colorPickerRecyclerView = dialogView.findViewById<RecyclerView>(R.id.colorPickerRecyclerView)
         val colorSelectionWarning = dialogView.findViewById<TextView>(R.id.colorSelectionWarning) // Referensi ke warning text
 
-        // Daftar warna yang akan ditampilkan
         val predefinedColors = listOf(
             "#F44336", // Red
             "#E91E63", // Pink
@@ -192,7 +188,6 @@ class AddEditNoteActivity : AppCompatActivity() {
             LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         colorPickerRecyclerView.adapter = colorAdapter
 
-        // Default: Pilih warna pertama sebagai default jika user tidak memilih
         if (selectedCategoryColor == null && predefinedColors.isNotEmpty()) {
             selectedCategoryColor = predefinedColors[0]
             colorAdapter.setSelectedColor(predefinedColors[0]) // Atur centang pada default
@@ -212,7 +207,7 @@ class AddEditNoteActivity : AppCompatActivity() {
         val positiveButton = alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)
         positiveButton.setOnClickListener {
             val name = editName.text.toString().trim()
-            val colorHex = selectedCategoryColor // *** Ambil warna dari variabel yang dipilih ***
+            val colorHex = selectedCategoryColor
 
             var isValid = true
 
@@ -223,7 +218,7 @@ class AddEditNoteActivity : AppCompatActivity() {
                 textInputLayoutName.error = null
             }
 
-            // Validasi: Pastikan warna sudah dipilih
+            // Validasi
             if (colorHex.isNullOrBlank()) {
                 colorSelectionWarning.visibility = View.VISIBLE
                 isValid = false
@@ -232,7 +227,6 @@ class AddEditNoteActivity : AppCompatActivity() {
             }
 
             if (isValid) {
-                // Pastikan colorHex tidak null saat membuat Category
                 val category = Category(name = name, colorHex = colorHex!!)
                 val db = NotesDatabaseHelper(this).writableDatabase
                 CategoryDao.insert(db, category)

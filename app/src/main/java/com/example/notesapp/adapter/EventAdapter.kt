@@ -11,8 +11,8 @@ import com.example.notesapp.data.model.Event
 
 class EventAdapter(
     private var events: List<Event>,
-    private val onEventClick: (Event) -> Unit, // Untuk klik item (misal: edit/delete)
-    private val onEventLongClick: (Event) -> Unit // Untuk long click (misal: delete)
+    private val onEventClick: (Event) -> Unit,
+    private val onEventLongClick: (Event) -> Unit
 ) : RecyclerView.Adapter<EventAdapter.EventViewHolder>() {
 
     class EventViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -35,7 +35,7 @@ class EventAdapter(
         holder.itemView.setOnClickListener { onEventClick(event) }
         holder.itemView.setOnLongClickListener {
             onEventLongClick(event)
-            true // Mengembalikan true untuk mengonsumsi event long click
+            true
         }
     }
 

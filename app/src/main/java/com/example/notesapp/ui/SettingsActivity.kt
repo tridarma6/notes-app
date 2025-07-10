@@ -23,23 +23,18 @@ class SettingsActivity : AppCompatActivity() {
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // --- BARU: Inisialisasi ActivityResultLauncher untuk SetPinActivity ---
         setPinLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 Toast.makeText(this, "PIN berhasil diatur/diperbarui.", Toast.LENGTH_SHORT).show()
-                // Anda bisa melakukan aksi lain di sini setelah PIN berhasil diatur
             } else {
                 Toast.makeText(this, "Pengaturan PIN dibatalkan.", Toast.LENGTH_SHORT).show()
             }
         }
-        // --- AKHIR BARU ---
 
-        // Load saved dark mode state
         val sharedPrefs = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
         val isDarkMode = sharedPrefs.getBoolean("dark_mode", false)
         binding.switchDarkMode.isChecked = isDarkMode
 
-        // Set initial dark mode state
         AppCompatDelegate.setDefaultNightMode(
             if (isDarkMode)
                 AppCompatDelegate.MODE_NIGHT_YES
@@ -47,7 +42,6 @@ class SettingsActivity : AppCompatActivity() {
                 AppCompatDelegate.MODE_NIGHT_NO
         )
 
-        // --- Bottom Navigation (Tidak Berubah) ---
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.menu_notes -> {
@@ -61,7 +55,6 @@ class SettingsActivity : AppCompatActivity() {
                     true
                 }
                 R.id.menu_setting -> {
-                    // Sudah di halaman settings
                     true
                 }
                 else -> false
@@ -70,7 +63,6 @@ class SettingsActivity : AppCompatActivity() {
         binding.bottomNavigation.selectedItemId = R.id.menu_setting
 
         // --- Logika Toggle Dark Mode ---
-        // Listener pada SwitchCompat itu sendiri tetap ada (untuk kasus jika pengguna mengklik langsung switch)
         binding.switchDarkMode.setOnCheckedChangeListener { _, isChecked ->
             sharedPrefs.edit().putBoolean("dark_mode", isChecked).apply()
             AppCompatDelegate.setDefaultNightMode(
@@ -81,21 +73,14 @@ class SettingsActivity : AppCompatActivity() {
             )
         }
 
-        // --- BARU: Listener untuk seluruh baris Dark Mode (darkModeSettingRow) ---
-        // Ini akan memicu toggle switch saat baris diklik
         binding.darkModeSettingRow.setOnClickListener {
             binding.switchDarkMode.toggle() // Mengalihkan status SwitchCompat
         }
-        // --- AKHIR BARU ---
 
 
-        // --- BARU: Logika Set PIN ---
-        // Tombol 'btnSetPin' tidak lagi ada di XML baru.
-        // Sekarang, seluruh baris 'setPinSettingRow' yang dapat diklik.
         binding.setPinSettingRow.setOnClickListener {
             val intent = Intent(this, SetPinActivity::class.java)
-            setPinLauncher.launch(intent) // Gunakan launcher baru
+            setPinLauncher.launch(intent)
         }
-        // --- AKHIR BARU ---
     }
 }

@@ -26,7 +26,6 @@ class SetPinActivity : AppCompatActivity() {
         VERIFY_OLD_PIN,
         ENTER_NEW_PIN,
         CONFIRM_NEW_PIN
-        // SET_SECURITY_QUESTION TIDAK LAGI DI SINI
     }
 
     private var currentState: PinInputState = PinInputState.VERIFY_OLD_PIN
@@ -36,7 +35,7 @@ class SetPinActivity : AppCompatActivity() {
         binding = ActivitySetPinBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupInitialState() // Setup UI berdasarkan ada/tidaknya PIN lama
+        setupInitialState()
 
         binding.backArrow.setOnClickListener { handleBackButton() }
         binding.backText.setOnClickListener { handleBackButton() }
@@ -71,7 +70,6 @@ class SetPinActivity : AppCompatActivity() {
             binding.tvPinInputTitle.text = getString(R.string.enter_your_new_pin)
             binding.tvForgotPassword.visibility = View.GONE
         }
-        // updateUIForCurrentState() tidak perlu dipanggil di sini karena hanya ada satu tipe UI utama
         updatePinDots() // Inisialisasi dot kosong
     }
 
@@ -174,10 +172,8 @@ class SetPinActivity : AppCompatActivity() {
                     PinManager.savePin(this, firstPin!!) // PIN baru disimpan di sini
                     Toast.makeText(this, "PIN berhasil diatur! Sekarang atur pertanyaan keamanan.", Toast.LENGTH_LONG).show()
 
-                    // --- BARU: Luncurkan Activity untuk mengatur pertanyaan keamanan ---
                     val intent = Intent(this, SetSecurityQuestionActivity::class.java)
                     startActivityForResult(intent, REQUEST_CODE_SET_SECURITY_QUESTION)
-                    // finish() akan dipanggil di onActivityResult setelah pertanyaan keamanan disetel
                 } else {
                     Toast.makeText(this, "PIN baru tidak cocok. Silakan coba lagi dari awal.", Toast.LENGTH_LONG).show()
                     firstPin = null
@@ -195,7 +191,7 @@ class SetPinActivity : AppCompatActivity() {
         }
     }
 
-    // --- BARU: Tangani Hasil dari Activity Lain ---
+    // Menangani Hasil dari Activity Lain
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
@@ -217,13 +213,9 @@ class SetPinActivity : AppCompatActivity() {
             }
             REQUEST_CODE_SET_SECURITY_QUESTION -> {
                 if (resultCode == Activity.RESULT_OK) {
-                    // Pertanyaan keamanan berhasil diatur, selesaikan SetPinActivity
                     setResult(Activity.RESULT_OK)
                     finish()
                 } else {
-                    // Pengguna membatalkan pengaturan pertanyaan keamanan
-                    // Anda bisa memilih untuk memaksa mereka mengaturnya (misalnya, kembali ke state CONFIRM_NEW_PIN)
-                    // atau biarkan PIN diatur tanpa pertanyaan keamanan
                     Toast.makeText(this, "Pengaturan pertanyaan keamanan dibatalkan.", Toast.LENGTH_LONG).show()
                     setResult(Activity.RESULT_CANCELED) // Atau RESULT_OK jika Anda mengizinkan tanpa pertanyaan
                     finish()

@@ -175,11 +175,9 @@ class EventActivity : AppCompatActivity() {
 
         alertDialog.show()
 
-        // Atur warna tombol
         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(this, R.color.green_active))
         alertDialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(this, R.color.gray))
 
-        // Handle klik tombol Simpan secara manual untuk validasi
         val positiveButton = alertDialog.getButton(AlertDialog.BUTTON_POSITIVE)
         positiveButton.setOnClickListener {
             val title = editTitle.text.toString().trim()
@@ -229,7 +227,6 @@ class EventActivity : AppCompatActivity() {
         }
     }
 
-    // --- Fungsi untuk konfirmasi hapus event ---
     private fun showDeleteEventConfirmationDialog(event: Event) {
         val alertDialog = AlertDialog.Builder(this)
             .setTitle("Hapus Event")
